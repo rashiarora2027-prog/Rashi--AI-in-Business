@@ -1,6 +1,7 @@
 import express, { Request, Response } from 'express';
 import dotenv from 'dotenv';
 import path from 'path';
+import fs from 'fs';
 import { fileURLToPath } from 'url';
 import { GoogleGenAI } from '@google/genai';
 
@@ -11,7 +12,14 @@ const __dirname = path.dirname(__filename);
 
 const app = express();
 const PORT = Number(process.env.PORT) || 3000;
-const isProduction = process.env.NODE_ENV === 'production';
+// Treat any managed hosting environment as production. Relying on NODE_ENV
+// alone is fragile: if the host does not set it, the server would try to boot
+// Vite's dev server inside a serverless function and crash on every request.
+const isProduction =
+  process.env.NODE_ENV === 'production' ||
+  Boolean(process.env.VERCEL) ||
+  Boolean(process.env.VERCEL_ENV) ||
+  Boolean(process.env.AWS_LAMBDA_FUNCTION_NAME);
 
 app.use(express.json());
 
@@ -504,6 +512,24 @@ Keep the response to 2-3 focused paragraphs. Do not use generic chatbot boilerpl
   }
 });
 
+// Locate the built frontend. The bundled server may sit at a different depth
+// than it does in the repo, so check the plausible locations instead of
+// assuming one and failing every request when the guess is wrong.
+function findDistPath(): string | null {
+  const candidates = [
+    path.resolve(__dirname, 'dist'),
+    path.resolve(__dirname, '..', 'dist'),
+    path.resolve(__dirname, '..', '..', 'dist'),
+    path.resolve(process.cwd(), 'dist'),
+  ];
+  for (const candidate of candidates) {
+    if (fs.existsSync(path.join(candidate, 'index.html'))) {
+      return candidate;
+    }
+  }
+  return null;
+}
+
 // Serve frontend in dev or prod
 async function startServer() {
   if (!isProduction) {
@@ -516,17 +542,50 @@ async function startServer() {
     // but its type definitions do not overlap, hence the cast.
     app.use(vite.middlewares as any);
   } else {
-    const distPath = path.resolve(__dirname, 'dist');
-    app.use(express.static(distPath));
-    app.get('*', (_req, res) => {
-      res.sendFile(path.resolve(distPath, 'index.html'));
-    });
+    const distPath = findDistPath();
+
+    if (distPath) {
+      console.log(`Serving built frontend from ${distPath}`);
+      app.use(express.static(distPath));
+      app.get('*', (_req, res) => {
+        res.sendFile(path.join(distPath, 'index.html'), (err) => {
+          if (err) {
+            console.error('Could not send index.html:', err);
+            if (!res.headersSent) res.status(500).send('Could not load the page.');
+          }
+        });
+      });
+    } else {
+      // The API still works; only the frontend is missing. Say so plainly
+      // rather than letting every request take the whole function down.
+      console.error(
+        'No built frontend found. Looked relative to',
+        __dirname,
+        'and',
+        process.cwd()
+      );
+      app.get('*', (_req, res) => {
+        res
+          .status(500)
+          .send('The site was deployed without its built frontend. The build step did not produce a dist folder.');
+      });
+    }
   }
 
   app.listen(PORT, '0.0.0.0', () => {
-    console.log(`PATTERNS server running on http://0.0.0.0:${PORT}`);
+    console.log(`PATTERNS server running on port ${PORT}`);
   });
 }
+
+// Never let a single bad request kill the whole function.
+app.use((err: Error, _req: Request, res: Response, _next: unknown) => {
+  console.error('Unhandled error:', err);
+  if (!res.headersSent) res.status(500).json({ error: 'internal_error' });
+});
+
+process.on('unhandledRejection', (reason) => {
+  console.error('Unhandled promise rejection:', reason);
+});
 
 startServer().catch((err) => {
   console.error('Failed to start server:', err);
