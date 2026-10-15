@@ -512,7 +512,9 @@ async function startServer() {
       server: { middlewareMode: true },
       appType: 'spa',
     });
-    app.use(vite.middlewares);
+    // Vite's dev middleware is a Connect server; Express accepts it at runtime
+    // but its type definitions do not overlap, hence the cast.
+    app.use(vite.middlewares as any);
   } else {
     const distPath = path.resolve(__dirname, 'dist');
     app.use(express.static(distPath));
