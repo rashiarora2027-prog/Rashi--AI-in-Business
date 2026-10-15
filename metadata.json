@@ -1,0 +1,6 @@
+{
+  "name": "PATTERNS — Understand your patterns",
+  "description": "An AI-powered astrology and self-discovery platform helping you gain clarity, understand recurring feelings, and navigate what's next.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

@@ -1,0 +1,98 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    --font-serif: 'Cormorant Garamond', Georgia, Cambria, serif;
+    --font-sans: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+    --font-script: 'Caveat', cursive;
+    
+    --bg-primary: #F6F2EB;
+    --bg-card: rgba(255, 255, 255, 0.65);
+    --border-subtle: rgba(184, 166, 148, 0.28);
+    --gold-primary: #B89053;
+    --gold-muted: #8E7854;
+    --text-primary: #211E1A;
+    --text-muted: #6B6256;
+  }
+
+  body {
+    font-family: var(--font-sans);
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    overflow-x: auto;
+    overflow-y: auto;
+    min-height: 100vh;
+  }
+
+  h1, h2, h3, .font-serif {
+    font-family: var(--font-serif);
+  }
+
+  .font-script {
+    font-family: var(--font-script);
+  }
+}
+
+/* Custom delicate styling */
+.celestial-glow {
+  box-shadow: 0 0 60px -15px rgba(212, 175, 55, 0.18);
+}
+
+.card-warm-glass {
+  background: rgba(254, 252, 248, 0.72);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(206, 192, 174, 0.45);
+}
+
+.card-warm-glass:hover {
+  background: rgba(255, 254, 251, 0.9);
+  border-color: rgba(184, 144, 83, 0.45);
+}
+
+/* Custom scrollbar matching editorial aesthetic */
+::-webkit-scrollbar {
+  width: 7px;
+  height: 7px;
+}
+
+::-webkit-scrollbar-track {
+  background: #EFE9E0;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #CFC2B2;
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #B3A08C;
+}
+
+@keyframes spin-slow {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes pulse-subtle {
+  0%, 100% {
+    opacity: 0.95;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.8;
+    transform: scale(0.99);
+  }
+}
+
+.animate-spin-slow {
+  animation: spin-slow 160s linear infinite;
+}
+
+.animate-pulse-subtle {
+  animation: pulse-subtle 6s ease-in-out infinite;
+}
