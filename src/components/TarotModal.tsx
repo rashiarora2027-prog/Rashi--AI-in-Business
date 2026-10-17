@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import DetailedReportUpsell from './DetailedReportUpsell';
 import { TarotCard, TarotReadingResult } from '../types';
 
 interface TarotModalProps {
@@ -342,13 +343,15 @@ export const TarotModal: React.FC<TarotModalProps> = ({ isOpen, onClose }) => {
               </p>
             </div>
 
+            <DetailedReportUpsell context="tarot" />
+
             <div className="flex justify-end pt-2">
               <button
                 type="button"
                 onClick={onClose}
                 className="px-5 py-2 rounded-full bg-[#1C1814] text-[#FAF7F2] text-xs font-medium tracking-wide hover:bg-[#342D26] cursor-pointer"
               >
-                Close & Return
+                Close &amp; Return
               </button>
             </div>
           </div>
