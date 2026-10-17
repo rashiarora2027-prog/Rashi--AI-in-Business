@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import DetailedReportUpsell from './DetailedReportUpsell';
 import { StuckQuestion, StuckAnalysisResult, SavedPattern } from '../types';
 
 interface ImStuckModalProps {
@@ -277,6 +278,8 @@ export const ImStuckModal: React.FC<ImStuckModalProps> = ({
               </ul>
             </div>
 
+            <DetailedReportUpsell context="stuck" />
+
             {/* Action Bar */}
             <div className="flex items-center justify-between pt-4 border-t border-[#E8DDCD]">
               <div className="flex items-center gap-3">
@@ -306,7 +309,7 @@ export const ImStuckModal: React.FC<ImStuckModalProps> = ({
                 onClick={onClose}
                 className="px-5 py-2 rounded-full bg-[#1C1814] text-[#FAF7F2] text-xs font-medium tracking-wide hover:bg-[#342D26] cursor-pointer"
               >
-                Close & Return
+                Close &amp; Return
               </button>
             </div>
           </div>
