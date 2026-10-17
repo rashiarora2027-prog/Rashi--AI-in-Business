@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import DetailedReportUpsell from './DetailedReportUpsell';
 import { UserProfile, CompatibilityResult } from '../types';
 
 interface CompatibilityModalProps {
@@ -290,13 +291,15 @@ export const CompatibilityModal: React.FC<CompatibilityModalProps> = ({
               </ul>
             </div>
 
+            <DetailedReportUpsell context="relationship" />
+
             <div className="flex justify-end pt-3 border-t border-[#E8DDCD]">
               <button
                 type="button"
                 onClick={onClose}
                 className="px-5 py-2 rounded-full bg-[#1C1814] text-[#FAF7F2] text-xs font-medium tracking-wide hover:bg-[#342D26] cursor-pointer"
               >
-                Close & Return
+                Close &amp; Return
               </button>
             </div>
           </div>
