@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import DetailedReportUpsell from './DetailedReportUpsell';
 import { UserProfile } from '../types';
 import { calculateFullKundali, KundaliChartData } from '../utils/astronomy';
 import { loadCities, citiesReady } from '../utils/loadCities';
@@ -126,7 +127,7 @@ export const BirthChartModal: React.FC<BirthChartModalProps> = ({
               <div className="p-4 rounded-2xl bg-white/80 border border-[#DFD1BE] shadow-xs">
                 <div className="flex justify-between items-start mb-2">
                   <span className="text-xs font-semibold text-[#251E17]">Chandra (Moon)</span>
-                  <span className="text-[11px] text-[#8A6F4E] font-serif">Mind & Heart</span>
+                  <span className="text-[11px] text-[#8A6F4E] font-serif">Mind &amp; Heart</span>
                 </div>
                 <p className="text-lg font-serif text-[#866D4E] font-medium mb-0.5">
                   {moon?.sign || userProfile.moonSign || 'Pisces'} ({moon?.signSanskrit || 'Meena'})
@@ -213,7 +214,7 @@ export const BirthChartModal: React.FC<BirthChartModalProps> = ({
                     <th className="py-2.5 px-3">Graha (Planet)</th>
                     <th className="py-2.5 px-3">Sign (Rashi)</th>
                     <th className="py-2.5 px-3">Exact Degree</th>
-                    <th className="py-2.5 px-3">Nakshatra & Pada</th>
+                    <th className="py-2.5 px-3">Nakshatra &amp; Pada</th>
                     <th className="py-2.5 px-3">Motion</th>
                   </tr>
                 </thead>
@@ -289,16 +290,22 @@ export const BirthChartModal: React.FC<BirthChartModalProps> = ({
           </div>
         )}
 
+        {/* Below the tabs rather than inside one, so the offer is there
+            whichever view of the chart you happen to be looking at. */}
+        <div className="mt-6">
+          <DetailedReportUpsell context="chart" />
+        </div>
+
         <div className="flex justify-between items-center pt-5 border-t border-[#E8DDCD] mt-6">
           <span className="text-[11px] text-[#86735E]">
-            Verified with NASA JPL Planetary Algorithms & Chitrapaksha Lahiri standard
+            Verified with NASA JPL Planetary Algorithms &amp; Chitrapaksha Lahiri standard
           </span>
           <button
             type="button"
             onClick={onClose}
             className="px-5 py-2 rounded-full bg-[#1C1814] text-[#FAF7F2] text-xs font-medium tracking-wide hover:bg-[#342D26] cursor-pointer"
           >
-            Close & Return
+            Close &amp; Return
           </button>
         </div>
       </div>
