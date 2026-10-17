@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { UserProfile, FeelingInsightResult, SavedPattern, QuickFeeling } from '../types';
+import DetailedReportModal from './DetailedReportModal';
 
 interface WhyAmIFeelingThisModalProps {
   isOpen: boolean;
@@ -22,6 +23,7 @@ export const WhyAmIFeelingThisModal: React.FC<WhyAmIFeelingThisModalProps> = ({
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<FeelingInsightResult | null>(null);
   const [saved, setSaved] = useState(false);
+  const [showDetailed, setShowDetailed] = useState(false);
 
   useEffect(() => {
     if (initialFeelingText) {
@@ -136,7 +138,7 @@ export const WhyAmIFeelingThisModal: React.FC<WhyAmIFeelingThisModalProps> = ({
               </span>
             </div>
             <h2 className="text-2xl sm:text-3xl font-serif text-[#221C16] font-normal">
-              Astrological & Archetypal Insight
+              Astrological &amp; Archetypal Insight
             </h2>
             <p className="text-xs text-[#6B5B49] mt-0.5">
               Reflections for {userProfile.name} &bull; {userProfile.birthDate ? `Birth: ${userProfile.birthDate}` : 'General Transit Climate'}
@@ -199,7 +201,7 @@ export const WhyAmIFeelingThisModal: React.FC<WhyAmIFeelingThisModalProps> = ({
               Mapping your subjective experience against classical planetary transits...
             </p>
             <p className="text-[11px] text-[#8B7863]">
-              Referencing principles from Brihat Parashara Hora Shastra & Saravali
+              Referencing principles from Brihat Parashara Hora Shastra &amp; Saravali
             </p>
           </div>
         )}
@@ -210,7 +212,7 @@ export const WhyAmIFeelingThisModal: React.FC<WhyAmIFeelingThisModalProps> = ({
             {/* 1. Tender Validation Summary */}
             <div className="p-5 rounded-2xl bg-[#F4EDE2]/80 border border-[#DFD0BE]">
               <span className="text-[10px] uppercase tracking-[0.2em] font-sans font-semibold text-[#866D50] block mb-1">
-                VALIDATION & CONTEXT
+                VALIDATION &amp; CONTEXT
               </span>
               <p className="text-sm sm:text-base font-serif text-[#29221B] leading-relaxed italic">
                 &ldquo;{result.summary}&rdquo;
@@ -318,6 +320,33 @@ export const WhyAmIFeelingThisModal: React.FC<WhyAmIFeelingThisModalProps> = ({
               </ul>
             </div>
 
+            {/* The hook.
+                Deliberately not a cliffhanger. Withholding something ominous
+                and charging to reveal it would be prediction dressed as a
+                teaser, which is the one thing this product promises not to do
+                — on the homepage, three times over. So the free reading stays
+                whole and this offers depth on the same chart rather than the
+                missing half of it. Saying so plainly is also what makes it
+                worth buying: nobody resents paying for more of something that
+                was already honest. */}
+            <div className="p-5 sm:p-6 rounded-2xl bg-[#F6F2EB] border border-[#DECDBB]">
+              <h4 className="font-serif text-lg sm:text-xl text-[#1F1B16] mb-2">
+                The whole chart<span className="font-serif italic text-[#8B6E46]">,</span> not just this moment.
+              </h4>
+              <p className="text-xs sm:text-[13px] text-[#5C5042] leading-relaxed mb-4">
+                What you have just read is complete in itself. The detailed reading goes further
+                into the same chart — your Lagna, Moon and Sun one by one, the Dasha period you are
+                running, four areas of life taken separately, and the months ahead.
+              </p>
+              <button
+                type="button"
+                onClick={() => setShowDetailed(true)}
+                className="px-5 py-2.5 rounded-full bg-[#181512] text-[#F9F7F1] text-xs font-medium tracking-wide hover:bg-[#302821] transition-colors cursor-pointer"
+              >
+                Read the detailed report · ₹50
+              </button>
+            </div>
+
             {/* Action Bar: Save Pattern & Close */}
             <div className="flex items-center justify-between pt-4 border-t border-[#E8DDCD]">
               <button
@@ -338,12 +367,19 @@ export const WhyAmIFeelingThisModal: React.FC<WhyAmIFeelingThisModalProps> = ({
                 onClick={onClose}
                 className="px-5 py-2 rounded-full bg-[#1C1814] text-[#FAF7F2] text-xs font-medium tracking-wide hover:bg-[#342D26] cursor-pointer"
               >
-                Close & Return
+                Close &amp; Return
               </button>
             </div>
           </div>
         )}
       </div>
+
+      <DetailedReportModal
+        isOpen={showDetailed}
+        onClose={() => setShowDetailed(false)}
+        userProfile={userProfile}
+        focusHint={inputText}
+      />
     </div>
   );
 };
