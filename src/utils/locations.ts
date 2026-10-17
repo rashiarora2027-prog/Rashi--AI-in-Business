@@ -9,7 +9,7 @@
  * names in the source data carry diacritics, and nobody types those.
  */
 
-import { getCities, type City } from '../data/cities';
+import { getCities, type City } from '../data/cities.ts';
 
 export type { City };
 
