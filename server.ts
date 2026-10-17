@@ -556,8 +556,36 @@ async function startServer() {
 
     if (distPath) {
       console.log(`Serving built frontend from ${distPath}`);
-      app.use(express.static(distPath));
-      app.get('*', (_req, res) => {
+
+      // Cache headers matter more than they look here.
+      //
+      // Vite fingerprints every asset (index-CT0RE23Z.js), so those files are
+      // safe to cache forever. index.html must NOT be: it is the file that
+      // names which fingerprints are current. Cached, a returning visitor asks
+      // for the previous deploy's bundle, the catch-all below answers with
+      // index.html, the browser parses HTML as JavaScript, and the page renders
+      // blank with nothing in the console. That is what was happening.
+      app.use(
+        express.static(distPath, {
+          setHeaders(res, filePath) {
+            if (filePath.endsWith('.html')) {
+              res.setHeader('Cache-Control', 'no-cache');
+            } else if (filePath.includes(`${path.sep}assets${path.sep}`)) {
+              res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+            }
+          },
+        })
+      );
+
+      app.get('*', (req, res) => {
+        // A missing asset should fail as a missing asset. Serving index.html
+        // for /assets/index-OLDHASH.js is what turned a stale cache into a
+        // silent blank page instead of a visible 404.
+        if (req.path.startsWith('/assets/') || path.extname(req.path)) {
+          return res.status(404).send('Not found');
+        }
+
+        res.setHeader('Cache-Control', 'no-cache');
         res.sendFile(path.join(distPath, 'index.html'), (err) => {
           if (err) {
             console.error('Could not send index.html:', err);
