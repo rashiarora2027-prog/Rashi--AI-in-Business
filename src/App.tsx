@@ -4,6 +4,7 @@ import { CelestialWheel } from './components/CelestialWheel';
 import { PlanetaryRow } from './components/PlanetaryRow';
 import { FeelingQuickCard } from './components/FeelingQuickCard';
 import { FeatureCardsRow } from './components/FeatureCardsRow';
+import WhyDifferent from './components/WhyDifferent';
 import { CredibilityBanner } from './components/CredibilityBanner';
 import { LunarRhythmIndicator } from './components/LunarRhythmIndicator';
 
@@ -172,79 +173,104 @@ export default function App() {
       />
 
       {/* Main Content Area */}
-      <main className="w-full max-w-[1440px] mx-auto px-6 md:px-12 flex-1 flex flex-col justify-center">
-        
-        {/* 2. Hero Section: 3-column panoramic layout matching reference image */}
-        <section className="pt-3 pb-5 grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-6 items-center">
-          
-          {/* Left Column: Headlines, CTA and Planetary Symbols (5 cols) */}
-          <div className="lg:col-span-5 flex flex-col items-start text-left z-10">
-            {/* Small Eyebrow */}
-            <div className="flex items-center gap-1.5 text-xs tracking-[0.28em] font-sans font-semibold mb-2.5">
-              <span className="text-[#3A3229]">SAME STARS.</span>
-              <span className="text-[#967C5A]">A BRIGHTER YOU.</span>
+      <main className="w-full flex-1">
+
+        {/* 2. Hero — one message, one action. The wheel is the only companion
+            here on purpose: a second interactive card competing beside the CTA
+            was splitting attention on first load. */}
+        <section className="w-full max-w-[1440px] mx-auto px-6 md:px-12 min-h-[calc(100vh-96px)] flex items-center py-10">
+          <div className="w-full grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-8 items-center">
+
+            {/* The message */}
+            <div className="lg:col-span-6 flex flex-col items-start text-left z-10">
+              <div className="flex items-center gap-1.5 text-xs tracking-[0.28em] font-sans font-semibold mb-3">
+                <span className="text-[#3A3229]">SAME STARS.</span>
+                <span className="text-[#967C5A]">A BRIGHTER YOU.</span>
+              </div>
+
+              <h1 className="text-4xl sm:text-5xl md:text-6xl font-serif text-[#1F1B16] font-normal leading-[1.08] tracking-tight mb-4">
+                Understand<br />
+                your patterns<span className="font-serif italic text-[#8B6E46]">.</span>
+              </h1>
+
+              {/* What the app actually does, in two lines. */}
+              <p className="text-base sm:text-lg text-[#4C4337] font-sans max-w-lg leading-relaxed mb-2.5">
+                Tell us how you’re feeling. We read it against your real birth chart
+                and show you the pattern underneath.
+              </p>
+              <p className="text-sm text-[#8A7B68] font-serif italic mb-7">
+                Reflection, never prediction.
+              </p>
+
+              <button
+                type="button"
+                onClick={handleStartNow}
+                className="cursor-pointer px-7 py-3.5 rounded-full bg-[#181512] text-[#F9F7F1] text-sm font-medium tracking-wide transition-all duration-200 hover:bg-[#302821] hover:scale-[1.02] shadow-sm flex items-center gap-2.5"
+              >
+                <span>Start Your Journey</span>
+                <span className="font-serif text-base">→</span>
+              </button>
+
+              <PlanetaryRow />
             </div>
 
-            {/* Main Headline */}
-            <h1 className="text-4xl sm:text-5xl md:text-6xl font-serif text-[#1F1B16] font-normal leading-[1.08] tracking-tight mb-3.5">
-              Understand<br />
-              your patterns<span className="font-serif italic text-[#8B6E46]">.</span>
-            </h1>
+            {/* The visual */}
+            <div className="lg:col-span-6 flex flex-col items-center justify-center z-10">
+              <LunarRhythmIndicator
+                onPhaseSelect={(phase) => {
+                  setCurrentFeelingText(`I am aligning with the ${phase.name} (${phase.sanskrit}) lunar phase: "${phase.theme}". Here is what is shifting in my life: `);
+                  setIsFeelingModalOpen(true);
+                }}
+              />
 
-            {/* Supporting Text */}
-            <p className="text-sm sm:text-base text-[#5C5042] font-sans max-w-md leading-relaxed mb-5 font-normal">
-              Gain clarity, make sense of what you’re feeling, and navigate what’s next.
-            </p>
-
-            {/* Primary CTA Button */}
-            <button
-              type="button"
-              onClick={handleStartNow}
-              className="cursor-pointer px-7 py-3 rounded-full bg-[#181512] text-[#F9F7F1] text-sm font-medium tracking-wide transition-all duration-200 hover:bg-[#302821] hover:scale-[1.02] shadow-sm flex items-center gap-2.5"
-            >
-              <span>Start Your Journey</span>
-              <span className="font-serif text-base">→</span>
-            </button>
-
-            {/* Major Planetary Symbols Row */}
-            <PlanetaryRow />
-          </div>
-
-          {/* Center Column: Lunar Rhythm Indicator & The Large Celestial Zodiac Wheel (4 cols) */}
-          <div className="lg:col-span-4 flex flex-col items-center justify-center py-2 lg:py-0 z-10">
-            {/* Interactive Lunar Rhythm Indicator positioned near the Zodiac Wheel */}
-            <LunarRhythmIndicator
-              onPhaseSelect={(phase) => {
-                setCurrentFeelingText(`I am aligning with the ${phase.name} (${phase.sanskrit}) lunar phase: "${phase.theme}". Here is what is shifting in my life: `);
+              <CelestialWheel onSelectSign={(sign) => {
+                setCurrentFeelingText(`I want to explore the archetype of ${sign} and what it is reflecting in my current life.`);
                 setIsFeelingModalOpen(true);
-              }}
-            />
-
-            {/* The Large Celestial Zodiac Wheel */}
-            <CelestialWheel onSelectSign={(sign) => {
-              setCurrentFeelingText(`I want to explore the archetype of ${sign} and what it is reflecting in my current life.`);
-              setIsFeelingModalOpen(true);
-            }} />
-          </div>
-
-          {/* Right Column: "How are you feeling today?" card, quote and cursive text (3 cols) */}
-          <div className="lg:col-span-3 flex flex-col justify-center items-center lg:items-end z-10">
-            <FeelingQuickCard
-              onSelectFeeling={handleFeelingChosen}
-              onOpenDirect={handleDirectFeelingOpen}
-            />
+              }} />
+            </div>
           </div>
         </section>
 
-        {/* 3. Feature Section: "More than a horoscope." with 4 cards */}
-        <FeatureCardsRow
-          onOpenBirthChart={() => setIsBirthChartModalOpen(true)}
-          onOpenImStuck={() => setIsStuckModalOpen(true)}
-          onOpenCompatibility={() => setIsCompatibilityModalOpen(true)}
-          onOpenTarot={() => setIsTarotModalOpen(true)}
-          onOpenPatterns={() => setIsPatternsModalOpen(true)}
-          onOpenCompanions={() => setIsCompanionsModalOpen(true)}
-        />
+        {/* 3. The feeling prompt, now a screen of its own rather than a card
+            competing with the hero CTA. */}
+        <section className="w-full border-t border-[#E7DCCB]">
+          <div className="w-full max-w-[1440px] mx-auto px-6 md:px-12 py-20 md:py-24">
+            <div className="flex flex-col items-center text-center mb-9">
+              <span className="text-[11px] uppercase tracking-[0.28em] text-[#937C63] font-semibold mb-3">
+                WHERE A READING BEGINS
+              </span>
+              <h2 className="text-3xl md:text-4xl font-serif text-[#1F1B16] font-normal mb-3.5">
+                How are you feeling today?
+              </h2>
+              <p className="text-sm sm:text-base text-[#5C5042] max-w-xl leading-relaxed">
+                Start anywhere — a word, a mood, or a paragraph about the thing you keep
+                circling. Your chart is read against that, not the other way round.
+              </p>
+            </div>
+
+            <div className="flex justify-center">
+              <FeelingQuickCard
+                onSelectFeeling={handleFeelingChosen}
+                onOpenDirect={handleDirectFeelingOpen}
+              />
+            </div>
+          </div>
+        </section>
+
+        {/* 4. Positioning */}
+        <WhyDifferent />
+
+        {/* 5. Feature Section: "More than a horoscope." with 4 cards */}
+        <div className="w-full max-w-[1440px] mx-auto px-6 md:px-12 pb-6">
+          <FeatureCardsRow
+            onOpenBirthChart={() => setIsBirthChartModalOpen(true)}
+            onOpenImStuck={() => setIsStuckModalOpen(true)}
+            onOpenCompatibility={() => setIsCompatibilityModalOpen(true)}
+            onOpenTarot={() => setIsTarotModalOpen(true)}
+            onOpenPatterns={() => setIsPatternsModalOpen(true)}
+            onOpenCompanions={() => setIsCompanionsModalOpen(true)}
+          />
+        </div>
       </main>
 
       {/* 4. Bottom Credibility Banner & Classical Texts Illustration */}
