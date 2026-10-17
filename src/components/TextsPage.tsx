@@ -6,6 +6,7 @@
  */
 
 import { CLASSICAL_TEXTS, getTextBySlug } from '../data/classicalTexts.ts';
+import { DashaArcs, KundaliLattice } from './AbstractMotifs';
 
 type Props = {
   /** Slug of a single text, or null for the index. */
@@ -32,7 +33,18 @@ export default function TextsPage({ slug, onHome }: Props) {
   }
 
   return (
-    <div className="w-full max-w-[820px] mx-auto px-6 md:px-12 py-14 md:py-20">
+    <div className="relative isolate w-full max-w-[820px] mx-auto px-6 md:px-12 py-14 md:py-20">
+      {/* A reading column this narrow leaves very wide margins. These sit well
+          outside the measure so they never crowd the text. */}
+      <KundaliLattice
+        aria-hidden="true"
+        className="hidden xl:block fixed left-[4%] top-[22%] w-[210px] opacity-[0.09] -z-10"
+      />
+      <DashaArcs
+        aria-hidden="true"
+        className="hidden xl:block fixed right-[4%] bottom-[12%] w-[250px] opacity-[0.11] -z-10"
+      />
+
       {/* Breadcrumb */}
       <nav className="flex items-center gap-2 text-[11px] font-sans text-[#8A7B68] mb-10">
         <button

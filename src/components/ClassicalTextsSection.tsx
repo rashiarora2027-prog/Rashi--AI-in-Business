@@ -7,11 +7,17 @@
  */
 
 import { CLASSICAL_TEXTS } from '../data/classicalTexts.ts';
+import { NakshatraRing } from './AbstractMotifs';
 
 export default function ClassicalTextsSection() {
   return (
-    <section className="w-full border-t border-[#E7DCCB]">
-      <div className="w-full max-w-[1100px] mx-auto px-6 md:px-12 py-20 md:py-24">
+    <section className="relative w-full border-t border-[#E7DCCB] overflow-hidden">
+      {/* The 27 nakshatras, ticked off around the ecliptic. The list is capped
+          at 1100px, so these gutters are wide and were sitting empty. */}
+      <NakshatraRing className="hidden lg:block absolute -left-24 xl:left-[1%] top-[18%] w-[260px] xl:w-[300px] opacity-[0.13]" />
+      <NakshatraRing className="hidden xl:block absolute -right-28 bottom-[8%] w-[340px] opacity-[0.10]" />
+
+      <div className="relative w-full max-w-[1100px] mx-auto px-6 md:px-12 py-20 md:py-24">
         <div className="flex flex-col items-center text-center mb-10">
           <span className="text-[11px] uppercase tracking-[0.28em] text-[#937C63] font-semibold mb-3">
             WHERE THE READING COMES FROM
