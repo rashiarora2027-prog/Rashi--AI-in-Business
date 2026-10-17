@@ -1,5 +1,5 @@
 import * as Astronomy from 'astronomy-engine';
-import { localBirthToUtc } from './timezone';
+import { localBirthToUtc } from './timezone.ts';
 
 export interface CelestialPosition {
   name: string;
