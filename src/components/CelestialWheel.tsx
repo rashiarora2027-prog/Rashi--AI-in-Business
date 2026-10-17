@@ -56,6 +56,11 @@ export const CelestialWheel: React.FC<CelestialWheelProps> = ({ onSelectSign }) 
           </filter>
         </defs>
 
+        {/* Everything in this group turns together: the rings, the 72 degree
+            ticks and the sector spokes. The dashed circles are what actually
+            show the motion — a plain circle rotating is invisible. */}
+        <g className="wheel-ring">
+
         {/* Outer Fine Concentric Circles */}
         <circle cx="250" cy="250" r="236" fill="none" stroke="#BAA58C" strokeWidth="0.8" opacity="0.6" />
         <circle cx="250" cy="250" r="232" fill="none" stroke="#BAA58C" strokeWidth="0.5" strokeDasharray="2 3" opacity="0.75" />
@@ -101,6 +106,11 @@ export const CelestialWheel: React.FC<CelestialWheelProps> = ({ onSelectSign }) 
           );
         })}
 
+        </g>
+
+        {/* The glyphs stay still. They are click targets, and a sign that
+            drifts is a sign you have to chase; they would also hang upside
+            down for half of every turn. */}
         {/* 12 Zodiac Symbols */}
         {ZODIAC_SIGNS.map((sign) => {
           const rad = (sign.angle * Math.PI) / 180;
@@ -163,7 +173,7 @@ export const CelestialWheel: React.FC<CelestialWheelProps> = ({ onSelectSign }) 
         ))}
 
         {/* Subtle Radial Sun Rays Behind the Center Medallion */}
-        <g opacity="0.65">
+        <g className="wheel-corona" opacity="0.65">
           {Array.from({ length: 24 }).map((_, i) => {
             const angle = (i * 15 * Math.PI) / 180;
             const rStart = 78;
@@ -192,7 +202,10 @@ export const CelestialWheel: React.FC<CelestialWheelProps> = ({ onSelectSign }) 
         <circle cx="250" cy="250" r="76" fill="url(#sunGlow)" />
         <circle cx="250" cy="250" r="76" fill="none" stroke="#BD9E75" strokeWidth="1" opacity="0.8" />
 
-        {/* Wavy Traditional Sun Rays (Solar Corona) */}
+        {/* Wavy Traditional Sun Rays (Solar Corona). Grouped with the thin
+            rays above and turning the opposite way to the outer ring, so the
+            face at the centre reads as held still while the light moves. */}
+        <g className="wheel-corona">
         {Array.from({ length: 16 }).map((_, i) => {
           const angle = (i * 22.5 * Math.PI) / 180;
           const rayTipX = 250 + 94 * Math.cos(angle);
@@ -215,6 +228,7 @@ export const CelestialWheel: React.FC<CelestialWheelProps> = ({ onSelectSign }) 
             />
           );
         })}
+        </g>
 
         {/* Central Sun Face (Calm, Serene, Classical) */}
         <g id="sun-face" transform="translate(205, 205)">

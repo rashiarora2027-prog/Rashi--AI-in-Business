@@ -96,3 +96,54 @@
 .animate-pulse-subtle {
   animation: pulse-subtle 6s ease-in-out infinite;
 }
+
+/* ---------------------------------------------------------------------------
+   The celestial wheel turns.
+
+   Two groups only, counter-rotating, which is what makes it read as an
+   astrolabe rather than a spinning logo: the outer ring one way, the solar
+   corona the other. Everything that carries meaning stays still — the zodiac
+   glyphs (which are clickable, and would be a moving target), the sun face and
+   the crescent. Rotating those would turn them upside down twice a cycle.
+
+   Slow on purpose. A full turn of the outer ring takes four minutes, so it
+   reads as drift rather than animation; you notice it only if you rest on it.
+
+   transform-box: view-box is what lets transform-origin resolve against the
+   SVG's own 500x500 coordinate system, so the groups pivot on the wheel's
+   centre instead of their own bounding boxes.
+--------------------------------------------------------------------------- */
+@keyframes wheel-turn {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes wheel-turn-reverse {
+  to {
+    transform: rotate(-360deg);
+  }
+}
+
+.wheel-ring,
+.wheel-corona {
+  transform-box: view-box;
+  transform-origin: 250px 250px;
+  will-change: transform;
+}
+
+.wheel-ring {
+  animation: wheel-turn 240s linear infinite;
+}
+
+.wheel-corona {
+  animation: wheel-turn-reverse 300s linear infinite;
+}
+
+/* Anyone who has asked their system for less motion gets the wheel at rest. */
+@media (prefers-reduced-motion: reduce) {
+  .wheel-ring,
+  .wheel-corona {
+    animation: none;
+  }
+}
