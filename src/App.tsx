@@ -7,6 +7,7 @@ import { FeatureCardsRow } from './components/FeatureCardsRow';
 import WhyDifferent from './components/WhyDifferent';
 import ClassicalTextsSection from './components/ClassicalTextsSection';
 import CelestialBackdrop from './components/CelestialBackdrop';
+import { DashaArcs, LunarColumn } from './components/AbstractMotifs';
 import TextsPage from './components/TextsPage';
 import { CredibilityBanner } from './components/CredibilityBanner';
 import { LunarRhythmIndicator } from './components/LunarRhythmIndicator';
@@ -259,8 +260,14 @@ export default function App() {
 
         {/* 3. The feeling prompt, now a screen of its own rather than a card
             competing with the hero CTA. */}
-        <section className="w-full border-t border-[#E7DCCB]">
-          <div className="w-full max-w-[1440px] mx-auto px-6 md:px-12 py-20 md:py-24">
+        <section className="relative w-full border-t border-[#E7DCCB] overflow-hidden">
+          {/* The card sits centred in a wide column, leaving two tall empty
+              gutters. The Vimshottari cycle fills one and the lunar month the
+              other — the two clocks a reading is actually told by. */}
+          <DashaArcs className="hidden lg:block absolute left-[2%] xl:left-[5%] top-1/2 -translate-y-1/2 w-[250px] xl:w-[300px] opacity-[0.22]" />
+          <LunarColumn className="hidden lg:block absolute right-[6%] xl:right-[9%] top-1/2 -translate-y-1/2 h-[62%] opacity-[0.17]" />
+
+          <div className="relative w-full max-w-[1440px] mx-auto px-6 md:px-12 py-20 md:py-24">
             <div className="flex flex-col items-center text-center mb-9">
               <span className="text-[11px] uppercase tracking-[0.28em] text-[#937C63] font-semibold mb-3">
                 WHERE A READING BEGINS
