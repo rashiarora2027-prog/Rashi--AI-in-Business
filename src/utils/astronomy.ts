@@ -1,4 +1,5 @@
 import * as Astronomy from 'astronomy-engine';
+import { localBirthToUtc } from './timezone';
 
 export interface CelestialPosition {
   name: string;
@@ -61,6 +62,8 @@ export interface KundaliChartData {
     latitude: number;
     longitude: number;
     timezone: string;
+    /** False when the place could not be matched and defaults were used. */
+    resolved: boolean;
   };
 }
 
@@ -416,52 +419,67 @@ export function calculatePlanetaryPositions(date: Date, ayanamsa: number): Recor
   return result;
 }
 
-/**
- * Built-in zero-cost city geocoding database for accurate Lat/Long and UTC timezone lookup.
- * Covers major US metropolitan areas and global hubs.
- */
-export const CITY_COORDINATES_DB: Record<string, { lat: number; lon: number; timezone: string }> = {
-  // US Cities
-  'new york': { lat: 40.7128, lon: -74.006, timezone: 'America/New_York' },
-  'los angeles': { lat: 34.0522, lon: -118.2437, timezone: 'America/Los_Angeles' },
-  'chicago': { lat: 41.8781, lon: -87.6298, timezone: 'America/Chicago' },
-  'houston': { lat: 29.7604, lon: -95.3698, timezone: 'America/Chicago' },
-  'phoenix': { lat: 33.4484, lon: -112.074, timezone: 'America/Phoenix' },
-  'san francisco': { lat: 37.7749, lon: -122.4194, timezone: 'America/Los_Angeles' },
-  'seattle': { lat: 47.6062, lon: -122.3321, timezone: 'America/Los_Angeles' },
-  'denver': { lat: 39.7392, lon: -104.9903, timezone: 'America/Denver' },
-  'austin': { lat: 30.2672, lon: -97.7431, timezone: 'America/Chicago' },
-  'boston': { lat: 42.3601, lon: -71.0589, timezone: 'America/New_York' },
-  'miami': { lat: 25.7617, lon: -80.1918, timezone: 'America/New_York' },
-  'atlanta': { lat: 33.749, lon: -84.388, timezone: 'America/New_York' },
-  'dallas': { lat: 32.7767, lon: -96.797, timezone: 'America/Chicago' },
-  'washington': { lat: 38.9072, lon: -77.0369, timezone: 'America/New_York' },
-  // International Cities
-  'london': { lat: 51.5074, lon: -0.1278, timezone: 'Europe/London' },
-  'paris': { lat: 48.8566, lon: 2.3522, timezone: 'Europe/Paris' },
-  'new delhi': { lat: 28.6139, lon: 77.209, timezone: 'Asia/Kolkata' },
-  'mumbai': { lat: 19.076, lon: 72.8777, timezone: 'Asia/Kolkata' },
-  'bengaluru': { lat: 12.9716, lon: 77.5946, timezone: 'Asia/Kolkata' },
-  'tokyo': { lat: 35.6762, lon: 139.6503, timezone: 'Asia/Tokyo' },
-  'sydney': { lat: -33.8688, lon: 151.2093, timezone: 'Australia/Sydney' },
-  'toronto': { lat: 43.6532, lon: -79.3832, timezone: 'America/Toronto' },
+type ResolvedCity = {
+  label: string;
+  lat: number;
+  lon: number;
+  timezone: string;
 };
 
 /**
- * Resolves location string into latitude and longitude without any external paid API.
+ * The city lookup is injected rather than imported.
+ *
+ * The dataset is a few hundred KB. Importing it here would pull it into the
+ * main browser bundle for every visitor, including those who never open a
+ * chart. Instead the browser loads it on demand (see utils/loadCities) and the
+ * server loads it at startup, and each registers the resolver through here.
+ *
+ * If nothing has registered, resolveLocation reports `resolved: false` and the
+ * UI shows that the place was not matched — the one thing it must never do is
+ * silently chart someone at default coordinates.
  */
-export function resolveLocation(locationStr: string): { name: string; lat: number; lon: number; timezone: string } {
-  if (!locationStr) {
-    return { name: 'New York, NY', lat: 40.7128, lon: -74.006, timezone: 'America/New_York' };
-  }
-  const clean = locationStr.toLowerCase();
-  for (const [key, val] of Object.entries(CITY_COORDINATES_DB)) {
-    if (clean.includes(key)) {
-      return { name: locationStr, lat: val.lat, lon: val.lon, timezone: val.timezone };
-    }
-  }
-  // Default to US Eastern if unknown, still mathematically robust
-  return { name: locationStr, lat: 40.7128, lon: -74.006, timezone: 'America/New_York' };
+let cityResolver: ((locationStr: string) => ResolvedCity | null) | null = null;
+
+export function setCityResolver(fn: (locationStr: string) => ResolvedCity | null): void {
+  cityResolver = fn;
+}
+
+/**
+ * Resolves a location string to coordinates and timezone.
+ *
+ * Backed by the full city dataset, not a short hardcoded list. When a place
+ * genuinely cannot be found we say so via `resolved: false` rather than
+ * quietly substituting a default city — a chart computed at the wrong
+ * coordinates looks just as confident as a correct one, which is the worst
+ * possible failure for this app.
+ */
+export function resolveLocation(locationStr: string): {
+  name: string;
+  lat: number;
+  lon: number;
+  timezone: string;
+  resolved: boolean;
+} {
+  const fallback = {
+    name: locationStr || 'Unknown location',
+    lat: 28.6139,
+    lon: 77.209,
+    timezone: 'Asia/Kolkata',
+    resolved: false,
+  };
+
+  if (!locationStr) return fallback;
+
+  const city = cityResolver ? cityResolver(locationStr) : null;
+  if (!city) return fallback;
+
+  return {
+    name: city.label,
+    lat: city.lat,
+    lon: city.lon,
+    timezone: city.timezone,
+    resolved: true,
+  };
 }
 
 /**
@@ -477,9 +495,17 @@ export function calculateFullKundali(
   const [year, month, day] = birthDateStr.split('-').map(Number);
   const [hours, minutes] = (birthTimeStr || '12:00').split(':').map(Number);
 
-  // Approximate UTC time using timezone offset
-  // In pure JS: we construct a local date representation
-  const birthDate = new Date(Date.UTC(year, (month || 1) - 1, day || 1, hours || 12, minutes || 0));
+  // Convert the stated local birth time into the matching UTC instant using the
+  // birthplace's timezone. Skipping this shifts the Lagna by the UTC offset —
+  // about two and a half signs for an Indian birth.
+  const birthDate = localBirthToUtc(
+    year,
+    month || 1,
+    day || 1,
+    hours === undefined || Number.isNaN(hours) ? 12 : hours,
+    minutes === undefined || Number.isNaN(minutes) ? 0 : minutes,
+    loc.timezone
+  );
 
   // Compute Ayanamsha for birth date
   const birthAyanamsa = getLahiriAyanamsa(birthDate);
@@ -519,6 +545,7 @@ export function calculateFullKundali(
       latitude: loc.lat,
       longitude: loc.lon,
       timezone: loc.timezone,
+      resolved: loc.resolved,
     },
   };
 }
