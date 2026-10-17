@@ -8,9 +8,9 @@
   },
   "scripts": {
     "postinstall": "node scripts/patch-astronomy.mjs",
-    "dev": "node scripts/build-cities.mjs && tsx server.ts",
+    "dev": "node scripts/build-cities.mjs && node scripts/write-icons.mjs && tsx server.ts",
     "start": "node dist-server/server.js",
-    "build": "node scripts/build-cities.mjs && vite build && esbuild server.ts --bundle --platform=node --format=esm --outfile=dist-server/server.js --external:express --external:dotenv --external:@google/genai --external:vite --external:razorpay --external:@supabase/supabase-js",
+    "build": "node scripts/build-cities.mjs && node scripts/write-icons.mjs && vite build && esbuild server.ts --bundle --platform=node --format=esm --outfile=dist-server/server.js --external:express --external:dotenv --external:@google/genai --external:vite --external:razorpay --external:@supabase/supabase-js",
     "preview": "vite preview",
     "clean": "rm -rf dist dist-server",
     "lint": "tsc --noEmit",
