@@ -66,6 +66,16 @@ async function generateReflectiveText(prompt: string, fallback: string): Promise
 }
 
 import { calculateFullKundali, calculatePlanetaryPositions, getLahiriAyanamsa } from './src/utils/astronomy.ts';
+import { setCityResolver } from './src/utils/astronomy.ts';
+import { resolveCity } from './src/utils/locations.ts';
+
+// The server always needs the city lookup, so register it immediately. In the
+// browser the same data is loaded on demand instead (see utils/loadCities).
+setCityResolver((locationStr) => {
+  const city = resolveCity(locationStr);
+  if (!city) return null;
+  return { label: city.label, lat: city.lat, lon: city.lon, timezone: city.timezone };
+});
 
 // Helper: Formats mathematically verified astronomical transits & natal coordinates for Gemini prompts
 function getCosmicTelemetry(birthDate?: string, birthTime?: string, birthLocation?: string): string {
@@ -81,7 +91,7 @@ function getCosmicTelemetry(birthDate?: string, birthTime?: string, birthLocatio
     }
 
     if (birthDate) {
-      const natal = calculateFullKundali(birthDate, birthTime || '12:00', birthLocation || 'New York, NY');
+      const natal = calculateFullKundali(birthDate, birthTime || '12:00', birthLocation || '');
       summary += `\nUser's Exact Natal Kundali Placements (Sidereal):\n`;
       summary += `- Ascendant (Lagna): ${natal.ascendant.formattedDegree} in ${natal.ascendant.sign} (${natal.ascendant.signSanskrit}) | Nakshatra: ${natal.ascendant.nakshatra} (Pada ${natal.ascendant.pada})\n`;
       summary += `- Moon (Chandra): ${natal.moon.formattedDegree} in ${natal.moon.sign} (${natal.moon.signSanskrit}) | Nakshatra: ${natal.moon.nakshatra} (Pada ${natal.moon.pada})\n`;
@@ -105,7 +115,7 @@ app.post('/api/calculate-chart', (req: Request, res: Response) => {
     const chart = calculateFullKundali(
       birthDate,
       birthTime || '12:00',
-      birthLocation || 'New York, NY'
+      birthLocation || ''
     );
     res.json(chart);
   } catch (err) {
@@ -317,8 +327,8 @@ app.post('/api/compatibility', async (req: Request, res: Response) => {
   let synastryTelemetry = '';
   try {
     if (personA?.birthDate && personB?.birthDate) {
-      const chartA = calculateFullKundali(personA.birthDate, personA.birthTime || '12:00', personA.birthLocation || 'New York, NY');
-      const chartB = calculateFullKundali(personB.birthDate, personB.birthTime || '12:00', personB.birthLocation || 'New York, NY');
+      const chartA = calculateFullKundali(personA.birthDate, personA.birthTime || '12:00', personA.birthLocation || '');
+      const chartB = calculateFullKundali(personB.birthDate, personB.birthTime || '12:00', personB.birthLocation || '');
       synastryTelemetry = `
 MATHEMATICALLY CALCULATED SYNASTRY PLACEMENTS (Sidereal / Lahiri):
 ${personA.name || 'Partner A'}:
