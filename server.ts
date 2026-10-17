@@ -65,6 +65,8 @@ async function generateReflectiveText(prompt: string, fallback: string): Promise
   }
 }
 
+import { registerPaymentRoutes } from './payments.ts';
+import { registerDetailedReportRoute } from './detailedReport.ts';
 import { calculateFullKundali, calculatePlanetaryPositions, getLahiriAyanamsa } from './src/utils/astronomy.ts';
 import { setCityResolver } from './src/utils/astronomy.ts';
 import { resolveCity } from './src/utils/locations.ts';
@@ -104,6 +106,13 @@ function getCosmicTelemetry(birthDate?: string, birthTime?: string, birthLocatio
     return '';
   }
 }
+
+// Paid routes. Checkout returns 503 until the Razorpay keys are set, so this
+// is safe to ship switched off. The detailed report is handed the same Gemini
+// helper and the same verified placements the free reading uses, so the paid
+// reading goes deeper into one chart rather than consulting a second source.
+registerPaymentRoutes(app);
+registerDetailedReportRoute(app, { generateReflectiveText, getCosmicTelemetry });
 
 // 0. API: Calculate Mathematical Kundali Chart (100% Free, zero-external-cost)
 app.post('/api/calculate-chart', (req: Request, res: Response) => {
