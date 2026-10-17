@@ -1,6 +1,7 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { UserProfile } from '../types';
 import { calculateFullKundali, KundaliChartData } from '../utils/astronomy';
+import { loadCities, citiesReady } from '../utils/loadCities';
 
 interface BirthChartModalProps {
   isOpen: boolean;
@@ -15,18 +16,33 @@ export const BirthChartModal: React.FC<BirthChartModalProps> = ({
 }) => {
   const [activeTab, setActiveTab] = useState<'overview' | 'planets' | 'dasha'>('overview');
 
+  // A returning visitor can open this without ever touching a location field,
+  // so make sure the city data is in place before charting. Without it the
+  // birthplace cannot be resolved and the Ascendant would be computed at
+  // default coordinates.
+  const [geoReady, setGeoReady] = useState(citiesReady());
+  useEffect(() => {
+    if (!isOpen || geoReady) return;
+    let active = true;
+    loadCities().then(() => { if (active) setGeoReady(true); });
+    return () => { active = false; };
+  }, [isOpen, geoReady]);
+
   const chartData: KundaliChartData | null = useMemo(() => {
     try {
       return calculateFullKundali(
         userProfile.birthDate || '1996-05-14',
         userProfile.birthTime || '12:00',
-        userProfile.birthLocation || 'New York, NY'
+        userProfile.birthLocation || ''
       );
     } catch (err) {
       console.warn('Failed to calculate full kundali:', err);
       return null;
     }
-  }, [userProfile.birthDate, userProfile.birthTime, userProfile.birthLocation]);
+    // geoReady is a dependency on purpose: the chart is recomputed once the
+    // city data lands, so the first render is not left showing fallback values.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userProfile.birthDate, userProfile.birthTime, userProfile.birthLocation, geoReady]);
 
   if (!isOpen) return null;
 
