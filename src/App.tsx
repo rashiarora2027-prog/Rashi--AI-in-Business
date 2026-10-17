@@ -5,6 +5,9 @@ import { PlanetaryRow } from './components/PlanetaryRow';
 import { FeelingQuickCard } from './components/FeelingQuickCard';
 import { FeatureCardsRow } from './components/FeatureCardsRow';
 import WhyDifferent from './components/WhyDifferent';
+import ClassicalTextsSection from './components/ClassicalTextsSection';
+import CelestialBackdrop from './components/CelestialBackdrop';
+import TextsPage from './components/TextsPage';
 import { CredibilityBanner } from './components/CredibilityBanner';
 import { LunarRhythmIndicator } from './components/LunarRhythmIndicator';
 
@@ -69,6 +72,31 @@ export default function App() {
   // Quick feeling pass-through
   const [currentFeelingText, setCurrentFeelingText] = useState('');
   const [currentQuickState, setCurrentQuickState] = useState<QuickFeeling | undefined>(undefined);
+
+  // Hash routing for the classical-texts pages (#/texts, #/texts/<slug>).
+  // Hash rather than a router: shareable URLs that survive a reload on a static
+  // host, with nothing extra shipped to the browser.
+  const [hash, setHash] = useState<string>(() =>
+    typeof window === 'undefined' ? '' : window.location.hash
+  );
+
+  useEffect(() => {
+    const onHashChange = () => {
+      setHash(window.location.hash);
+      window.scrollTo({ top: 0, behavior: 'auto' });
+    };
+    window.addEventListener('hashchange', onHashChange);
+    return () => window.removeEventListener('hashchange', onHashChange);
+  }, []);
+
+  const isTextsRoute = hash === '#/texts' || hash.startsWith('#/texts/');
+  const textSlug = hash.startsWith('#/texts/') ? hash.slice('#/texts/'.length) : null;
+
+  const goHome = () => {
+    window.location.hash = '';
+    setHash('');
+    window.scrollTo({ top: 0, behavior: 'auto' });
+  };
 
   // Sync to local storage
   useEffect(() => {
@@ -174,12 +202,17 @@ export default function App() {
 
       {/* Main Content Area */}
       <main className="w-full flex-1">
+        {isTextsRoute ? (
+          <TextsPage slug={textSlug} onHome={goHome} />
+        ) : (
+        <>
 
         {/* 2. Hero — one message, one action. The wheel is the only companion
             here on purpose: a second interactive card competing beside the CTA
             was splitting attention on first load. */}
-        <section className="w-full max-w-[1440px] mx-auto px-6 md:px-12 min-h-[calc(100vh-96px)] flex items-center py-10">
-          <div className="w-full grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-8 items-center">
+        <section className="relative w-full min-h-[calc(100vh-96px)] flex items-center py-10 overflow-hidden">
+          <CelestialBackdrop />
+          <div className="relative w-full max-w-[1440px] mx-auto px-6 md:px-12 grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-8 items-center">
 
             {/* The message */}
             <div className="lg:col-span-6 flex flex-col items-start text-left z-10">
@@ -216,13 +249,6 @@ export default function App() {
 
             {/* The visual */}
             <div className="lg:col-span-6 flex flex-col items-center justify-center z-10">
-              <LunarRhythmIndicator
-                onPhaseSelect={(phase) => {
-                  setCurrentFeelingText(`I am aligning with the ${phase.name} (${phase.sanskrit}) lunar phase: "${phase.theme}". Here is what is shifting in my life: `);
-                  setIsFeelingModalOpen(true);
-                }}
-              />
-
               <CelestialWheel onSelectSign={(sign) => {
                 setCurrentFeelingText(`I want to explore the archetype of ${sign} and what it is reflecting in my current life.`);
                 setIsFeelingModalOpen(true);
@@ -248,6 +274,17 @@ export default function App() {
               </p>
             </div>
 
+            {/* The lunar bar lives here now rather than in the hero: it is about
+                mood and rhythm, which is what this section is asking about. */}
+            <div className="flex justify-center mb-8">
+              <LunarRhythmIndicator
+                onPhaseSelect={(phase) => {
+                  setCurrentFeelingText(`I am aligning with the ${phase.name} (${phase.sanskrit}) lunar phase: "${phase.theme}". Here is what is shifting in my life: `);
+                  setIsFeelingModalOpen(true);
+                }}
+              />
+            </div>
+
             <div className="flex justify-center">
               <FeelingQuickCard
                 onSelectFeeling={handleFeelingChosen}
@@ -260,7 +297,10 @@ export default function App() {
         {/* 4. Positioning */}
         <WhyDifferent />
 
-        {/* 5. Feature Section: "More than a horoscope." with 4 cards */}
+        {/* 5. The classical sources, each linking to its own page */}
+        <ClassicalTextsSection />
+
+        {/* 6. Feature Section: "More than a horoscope." with 4 cards */}
         <div className="w-full max-w-[1440px] mx-auto px-6 md:px-12 pb-6">
           <FeatureCardsRow
             onOpenBirthChart={() => setIsBirthChartModalOpen(true)}
@@ -271,6 +311,8 @@ export default function App() {
             onOpenCompanions={() => setIsCompanionsModalOpen(true)}
           />
         </div>
+        </>
+        )}
       </main>
 
       {/* 4. Bottom Credibility Banner & Classical Texts Illustration */}
