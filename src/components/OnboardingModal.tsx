@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { UserProfile } from '../types';
 import { calculateFullKundali } from '../utils/astronomy';
+import LocationAutocomplete from './LocationAutocomplete';
 
 interface OnboardingModalProps {
   isOpen: boolean;
@@ -31,7 +32,7 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({
   const [name, setName] = useState('');
   const [birthDate, setBirthDate] = useState('1996-05-14');
   const [birthTime, setBirthTime] = useState('08:30');
-  const [birthLocation, setBirthLocation] = useState('New York, NY, USA');
+  const [birthLocation, setBirthLocation] = useState('');
   const [timeUnknown, setTimeUnknown] = useState(false);
 
   if (!isOpen) return null;
@@ -68,7 +69,7 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({
         name: name.trim() || 'Seeker',
         birthDate,
         birthTime: timeUnknown ? '12:00' : birthTime,
-        birthLocation: birthLocation.trim() || 'New York, NY, USA',
+        birthLocation: birthLocation.trim(),
         sunSign: calculatedSun,
         moonSign: calculatedMoon,
         ascendant: calculatedAsc,
@@ -227,12 +228,9 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({
                 <label className="block text-[11px] font-medium uppercase tracking-wider text-[#6F5F4E] mb-1">
                   Birth Location
                 </label>
-                <input
-                  type="text"
+                <LocationAutocomplete
                   value={birthLocation}
-                  onChange={(e) => setBirthLocation(e.target.value)}
-                  placeholder="City, State / Country (e.g. Austin, TX)"
-                  className="w-full text-xs sm:text-sm px-3.5 py-2.5 rounded-xl bg-white/80 border border-[#DACBB8] text-[#241F1A] placeholder:text-[#A49483] focus:outline-none focus:border-[#967448]"
+                  onChange={setBirthLocation}
                 />
               </div>
             </div>
