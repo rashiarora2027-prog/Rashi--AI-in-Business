@@ -1,8 +1,8 @@
 /**
  * The paid detailed reading: checkout, then the report.
  *
- * Stages run intro -> paying -> generating -> report, with error as a side
- * exit. The access token lives in component state and is also handed back to
+ * Stages run intro -> paying (redirect to Dodo's hosted checkout) and, on
+ * return, verifying -> generating -> report, with error as a side exit. The access token lives in component state and is also handed back to
  * the server on retry, so a failed generation after a successful payment can
  * be recovered without charging again — the server returns the stored report
  * for a payment that already produced one.
@@ -11,14 +11,8 @@
  * returns you to the reflection you were already given.
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { UserProfile } from '../types';
-
-declare global {
-  interface Window {
-    Razorpay?: new (options: Record<string, unknown>) => { open: () => void };
-  }
-}
 
 type Props = {
   isOpen: boolean;
@@ -26,33 +20,65 @@ type Props = {
   userProfile: UserProfile;
   /** What they were already reflecting on, carried into the paid reading. */
   focusHint?: string;
+  /**
+   * Set when the customer has just come back from Dodo's hosted checkout.
+   * The modal then skips the offer, confirms the payment server-side and
+   * goes straight to the reading.
+   */
+  returningPaymentId?: string;
 };
 
-type Stage = 'intro' | 'paying' | 'generating' | 'report' | 'error';
+type Stage = 'intro' | 'paying' | 'verifying' | 'generating' | 'report' | 'error';
 
-const RAZORPAY_SCRIPT = 'https://checkout.razorpay.com/v1/checkout.js';
+type ReportContext = {
+  name?: string;
+  birthDetails: { date?: string; time?: string; location?: string };
+  focus?: string;
+  email?: string;
+};
 
-function loadRazorpayScript(): Promise<boolean> {
-  return new Promise((resolve) => {
-    if (window.Razorpay) return resolve(true);
-    const script = document.createElement('script');
-    script.src = RAZORPAY_SCRIPT;
-    script.onload = () => resolve(true);
-    script.onerror = () => resolve(false);
-    document.body.appendChild(script);
-  });
+/**
+ * Checkout happens on Dodo's own page, which means leaving this site. What the
+ * customer typed here is parked in localStorage so the reading can be built
+ * from it when they come back.
+ */
+const PENDING_KEY = 'patterns_pending_report';
+
+function savePending(ctx: ReportContext) {
+  try {
+    localStorage.setItem(PENDING_KEY, JSON.stringify(ctx));
+  } catch {
+    /* private mode: the reading falls back to the saved profile */
+  }
+}
+
+function loadPending(): ReportContext | null {
+  try {
+    const raw = localStorage.getItem(PENDING_KEY);
+    return raw ? (JSON.parse(raw) as ReportContext) : null;
+  } catch {
+    return null;
+  }
 }
 
 const EMAIL_RE = /^[^@\s]+@[^@\s.]+\.[^@\s]+$/;
 
-export default function DetailedReportModal({ isOpen, onClose, userProfile, focusHint }: Props) {
-  const [stage, setStage] = useState<Stage>('intro');
+export default function DetailedReportModal({
+  isOpen,
+  onClose,
+  userProfile,
+  focusHint,
+  returningPaymentId,
+}: Props) {
+  const [stage, setStage] = useState<Stage>(returningPaymentId ? 'verifying' : 'intro');
   const [error, setError] = useState('');
   const [email, setEmail] = useState('');
   const [focus, setFocus] = useState(focusHint ?? '');
   const [price, setPrice] = useState('₹50');
   const [paymentsEnabled, setPaymentsEnabled] = useState<boolean | null>(null);
   const [report, setReport] = useState<any>(null);
+  const accessTokenRef = useRef<string | null>(null);
+  const resumeStarted = useRef(false);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -65,41 +91,95 @@ export default function DetailedReportModal({ isOpen, onClose, userProfile, focu
       .catch(() => setPaymentsEnabled(false));
   }, [isOpen]);
 
-  const birthDetails = {
-    date: userProfile.birthDate,
-    time: userProfile.birthTime,
-    location: userProfile.birthLocation,
-  };
-
-  const fetchReport = useCallback(
-    async (accessToken: string) => {
-      setStage('generating');
-      try {
-        const res = await fetch('/api/detailed-report', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${accessToken}`,
-          },
-          body: JSON.stringify({
-            name: userProfile.name,
-            birthDetails,
-            focus: focus.trim() || undefined,
-          }),
-        });
-        if (!res.ok) throw new Error('report_failed');
-        setReport(await res.json());
-        setStage('report');
-      } catch {
-        setError(
-          'Your payment went through, but the reading could not be generated just now. ' +
-            'Nothing further has been charged. Email us and we will send it to you.'
-        );
-        setStage('error');
-      }
+  const currentContext = (): ReportContext => ({
+    name: userProfile.name,
+    birthDetails: {
+      date: userProfile.birthDate,
+      time: userProfile.birthTime,
+      location: userProfile.birthLocation,
     },
-    [userProfile.name, userProfile.birthDate, userProfile.birthTime, userProfile.birthLocation, focus]
+    focus: focus.trim() || undefined,
+    email: email.trim(),
+  });
+
+  const fetchReport = useCallback(async (accessToken: string, ctx: ReportContext) => {
+    setStage('generating');
+    try {
+      const res = await fetch('/api/detailed-report', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify({
+          name: ctx.name,
+          birthDetails: ctx.birthDetails,
+          focus: ctx.focus,
+        }),
+      });
+      if (!res.ok) throw new Error('report_failed');
+      setReport(await res.json());
+      setStage('report');
+      try {
+        localStorage.removeItem(PENDING_KEY);
+      } catch {
+        /* ignore */
+      }
+    } catch {
+      setError(
+        'Your payment went through, but the reading could not be generated just now. ' +
+          'Nothing further has been charged — press Try again, or email us and we will send it to you.'
+      );
+      setStage('error');
+    }
+  }, []);
+
+  /** Ask our server to confirm the payment with Dodo, retrying while it is still processing. */
+  const verifyAndLoad = useCallback(
+    async (paymentId: string) => {
+      setStage('verifying');
+      const ctx = loadPending() ?? {
+        name: userProfile.name,
+        birthDetails: {
+          date: userProfile.birthDate,
+          time: userProfile.birthTime,
+          location: userProfile.birthLocation,
+        },
+      };
+
+      for (let attempt = 0; attempt < 6; attempt++) {
+        const res = await fetch('/api/payment/verify', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ payment_id: paymentId }),
+        }).catch(() => null);
+
+        if (res?.ok) {
+          const { accessToken } = await res.json();
+          accessTokenRef.current = accessToken;
+          await fetchReport(accessToken, ctx);
+          return;
+        }
+        // 409 = still processing, 502 = could not reach Dodo: wait and retry.
+        if (res && res.status !== 409 && res.status !== 502) break;
+        await new Promise((r) => setTimeout(r, 2500));
+      }
+
+      setError(
+        'We could not confirm that payment. If money has left your account, it will be ' +
+          'returned automatically within a few days — or email us with your receipt and we will sort it out.'
+      );
+      setStage('error');
+    },
+    [userProfile.name, userProfile.birthDate, userProfile.birthTime, userProfile.birthLocation, fetchReport]
   );
+
+  // Coming back from Dodo's checkout: confirm once, then show the reading.
+  useEffect(() => {
+    if (!isOpen || !returningPaymentId || resumeStarted.current) return;
+    resumeStarted.current = true;
+    verifyAndLoad(returningPaymentId);
+  }, [isOpen, returningPaymentId, verifyAndLoad]);
 
   const startPayment = useCallback(async () => {
     if (!EMAIL_RE.test(email.trim())) {
@@ -109,65 +189,38 @@ export default function DetailedReportModal({ isOpen, onClose, userProfile, focu
     setError('');
     setStage('paying');
 
-    const scriptReady = await loadRazorpayScript();
-    if (!scriptReady) {
-      setError('Could not reach the payment provider. Please check your connection.');
-      setStage('error');
-      return;
-    }
-
+    const ctx = currentContext();
     try {
       const orderRes = await fetch('/api/payment/create-order', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: email.trim() }),
+        body: JSON.stringify(ctx),
       });
       if (!orderRes.ok) throw new Error('order_failed');
-      const order = await orderRes.json();
+      const { checkoutUrl } = await orderRes.json();
+      if (!checkoutUrl) throw new Error('no_checkout_url');
 
-      const rzp = new window.Razorpay!({
-        key: order.keyId,
-        amount: order.amount,
-        currency: order.currency,
-        order_id: order.orderId,
-        name: 'PATTERNS',
-        description: 'Detailed Reading',
-        theme: { color: '#1F1B16' },
-        prefill: { name: userProfile.name || undefined, email: email.trim() },
-        modal: { ondismiss: () => setStage('intro') },
-        handler: async (response: Record<string, string>) => {
-          const verifyRes = await fetch('/api/payment/verify', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              ...response,
-              email: email.trim(),
-              name: userProfile.name,
-              birthDetails,
-              focus: focus.trim() || undefined,
-            }),
-          });
-
-          if (!verifyRes.ok) {
-            setError(
-              'We could not verify that payment. If money has left your account, ' +
-                'it will be returned automatically within a few days.'
-            );
-            setStage('error');
-            return;
-          }
-
-          const { accessToken } = await verifyRes.json();
-          await fetchReport(accessToken);
-        },
-      });
-
-      rzp.open();
+      savePending(ctx);
+      // Off to Dodo's secure page. They send the customer back here afterwards.
+      window.location.href = checkoutUrl;
     } catch {
       setError('Could not start checkout. Please try again in a moment.');
       setStage('error');
     }
-  }, [email, focus, userProfile.name, fetchReport]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [email, focus, userProfile.name, userProfile.birthDate, userProfile.birthTime, userProfile.birthLocation]);
+
+  const retry = () => {
+    setError('');
+    if (accessTokenRef.current) {
+      // Already paid: regenerate without charging again.
+      fetchReport(accessTokenRef.current, loadPending() ?? currentContext());
+    } else if (returningPaymentId) {
+      verifyAndLoad(returningPaymentId);
+    } else {
+      setStage('intro');
+    }
+  };
 
   if (!isOpen) return null;
 
@@ -260,11 +313,15 @@ export default function DetailedReportModal({ isOpen, onClose, userProfile, focu
             </>
           )}
 
-          {(stage === 'paying' || stage === 'generating') && (
+          {(stage === 'paying' || stage === 'verifying' || stage === 'generating') && (
             <div className="flex flex-col items-center py-20 text-center">
               <div className="mb-5 h-8 w-8 rounded-full border-2 border-[#DECDBB] border-t-[#8B6E46] animate-spin" />
               <p className="text-sm text-[#4C4337]">
-                {stage === 'paying' ? 'Opening secure checkout…' : 'Reading your chart…'}
+                {stage === 'paying'
+                  ? 'Opening secure checkout…'
+                  : stage === 'verifying'
+                    ? 'Confirming your payment…'
+                    : 'Reading your chart…'}
               </p>
               {stage === 'generating' && (
                 <p className="mt-2 text-xs text-[#8A7B68]">
@@ -279,10 +336,7 @@ export default function DetailedReportModal({ isOpen, onClose, userProfile, focu
               <h3 className="mb-3 font-serif text-2xl text-[#1F1B16]">Something went wrong</h3>
               <p className="mb-6 text-sm leading-relaxed text-[#5C5042]">{error}</p>
               <button
-                onClick={() => {
-                  setError('');
-                  setStage('intro');
-                }}
+                onClick={retry}
                 className="rounded-full bg-[#181512] px-6 py-3 text-sm text-[#F9F7F1] hover:bg-[#302821] cursor-pointer"
               >
                 Try again
