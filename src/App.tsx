@@ -22,6 +22,7 @@ import { MyPatternsModal } from './components/MyPatternsModal';
 import { CompanionsModal } from './components/CompanionsModal';
 import { BirthChartModal } from './components/BirthChartModal';
 import { InfoModals } from './components/InfoModals';
+import DetailedReportModal from './components/DetailedReportModal';
 
 import { UserProfile, QuickFeeling, SavedPattern } from './types';
 
@@ -98,6 +99,28 @@ export default function App() {
     setHash('');
     window.scrollTo({ top: 0, behavior: 'auto' });
   };
+
+  // Returning from Dodo's hosted checkout: ?checkout=dodo&payment_id=...&status=...
+  // Read it once, strip it from the address bar so a reload does not re-run
+  // it, and reopen the detailed reading where the customer left off.
+  const [returningPaymentId, setReturningPaymentId] = useState<string | null>(() => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const id = params.get('payment_id');
+      return params.get('checkout') === 'dodo' && id ? id : null;
+    } catch {
+      return null;
+    }
+  });
+
+  useEffect(() => {
+    if (!returningPaymentId) return;
+    const url = new URL(window.location.href);
+    ['checkout', 'payment_id', 'status', 'email', 'license_key', 'subscription_id'].forEach((k) =>
+      url.searchParams.delete(k)
+    );
+    window.history.replaceState(null, '', url.pathname + url.search + url.hash);
+  }, [returningPaymentId]);
 
   // Sync to local storage
   useEffect(() => {
@@ -392,6 +415,16 @@ export default function App() {
         onClose={() => { setInfoModalType(null); setActiveTab('home'); }}
         onStartNow={() => { setInfoModalType(null); setIsOnboardingOpen(true); }}
       />
+
+      {/* Detailed reading, reopened after returning from checkout */}
+      {returningPaymentId && (
+        <DetailedReportModal
+          isOpen
+          onClose={() => setReturningPaymentId(null)}
+          userProfile={userProfile}
+          returningPaymentId={returningPaymentId}
+        />
+      )}
     </div>
   );
 }
