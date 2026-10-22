@@ -19,12 +19,12 @@ import type { Request, Response, NextFunction } from 'express';
 export const ACCESS_TTL_MS = 24 * 60 * 60 * 1000;
 
 /**
- * Falls back to the Razorpay secret so a single-provider setup works with one
- * fewer variable, but setting ACCESS_TOKEN_SECRET explicitly is better: it
- * means rotating a payment key does not invalidate every outstanding token.
+ * Falls back to the Dodo API key so a minimal setup works with one fewer
+ * variable, but setting ACCESS_TOKEN_SECRET explicitly is better: it means
+ * rotating the payment key does not invalidate every outstanding token.
  */
 const ACCESS_SECRET =
-  process.env.ACCESS_TOKEN_SECRET || process.env.RAZORPAY_KEY_SECRET || '';
+  process.env.ACCESS_TOKEN_SECRET || process.env.DODO_PAYMENTS_API_KEY || '';
 
 /** Constant-time comparison that tolerates unequal lengths without leaking it. */
 export function safeEqual(a: string, b: string): boolean {

@@ -21,7 +21,16 @@ const isProduction =
   Boolean(process.env.VERCEL_ENV) ||
   Boolean(process.env.AWS_LAMBDA_FUNCTION_NAME);
 
-app.use(express.json());
+// Keep the exact bytes of each request body alongside the parsed JSON. Payment
+// webhooks are signed over the raw body, and re-serialising the parsed object
+// would not reproduce it byte for byte.
+app.use(
+  express.json({
+    verify: (req, _res, buf) => {
+      (req as Request & { rawBody?: string }).rawBody = buf.toString('utf8');
+    },
+  })
+);
 
 // Initialize Gemini client if API key is available
 let aiClient: GoogleGenAI | null = null;
@@ -107,7 +116,7 @@ function getCosmicTelemetry(birthDate?: string, birthTime?: string, birthLocatio
   }
 }
 
-// Paid routes. Checkout returns 503 until the Razorpay keys are set, so this
+// Paid routes. Checkout returns 503 until the Dodo keys are set, so this
 // is safe to ship switched off. The detailed report is handed the same Gemini
 // helper and the same verified placements the free reading uses, so the paid
 // reading goes deeper into one chart rather than consulting a second source.
