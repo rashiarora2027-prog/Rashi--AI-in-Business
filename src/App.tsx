@@ -7,6 +7,9 @@ import { FeatureCardsRow } from './components/FeatureCardsRow';
 import WhyDifferent from './components/WhyDifferent';
 import ClassicalTextsSection from './components/ClassicalTextsSection';
 import CelestialBackdrop from './components/CelestialBackdrop';
+import StarField from './components/StarField';
+import LegalPages, { type LegalRoute } from './components/LegalPages';
+import { Entrance, LineReveal, Reveal } from './motion/primitives';
 import { DashaArcs, LunarColumn } from './components/AbstractMotifs';
 import TextsPage from './components/TextsPage';
 import { CredibilityBanner } from './components/CredibilityBanner';
@@ -92,6 +95,10 @@ export default function App() {
   }, []);
 
   const isTextsRoute = hash === '#/texts' || hash.startsWith('#/texts/');
+  // Four routes that previously fell through to the homepage, so a visitor
+  // following a footer link to the privacy policy was shown the hero instead.
+  const LEGAL_ROUTES: LegalRoute[] = ['terms', 'privacy', 'refunds', 'contact'];
+  const legalRoute = LEGAL_ROUTES.find((r) => hash === `#/${r}`) ?? null;
   const textSlug = hash.startsWith('#/texts/') ? hash.slice('#/texts/'.length) : null;
 
   const goHome = () => {
@@ -168,6 +175,16 @@ export default function App() {
       setIsBirthChartModalOpen(true);
     } else if (targetDestination === 'tarot') {
       setIsTarotModalOpen(true);
+    } else {
+      // 'curious' — and any intent added later without a destination of its
+      // own. Previously every unmatched intent fell through to nothing: the
+      // onboarding closed and the visitor was returned to the homepage having
+      // answered two screens of questions for no result. Someone who says they
+      // are "just curious" is the LEAST likely to go hunting for a second
+      // button, so this was costing exactly the people with the least patience.
+      // The chart is the right landing place: it is the richest thing we can
+      // show with no further input from them.
+      setIsBirthChartModalOpen(true);
     }
   };
 
@@ -226,7 +243,9 @@ export default function App() {
 
       {/* Main Content Area */}
       <main className="w-full flex-1">
-        {isTextsRoute ? (
+        {legalRoute ? (
+          <LegalPages route={legalRoute} onHome={goHome} />
+        ) : isTextsRoute ? (
           <TextsPage slug={textSlug} onHome={goHome} />
         ) : (
         <>
@@ -236,28 +255,41 @@ export default function App() {
             was splitting attention on first load. */}
         <section className="relative w-full min-h-[calc(100vh-96px)] flex items-center py-10 overflow-hidden">
           <CelestialBackdrop />
+          <StarField />
           <div className="relative w-full max-w-[1440px] mx-auto px-6 md:px-12 grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-8 items-center">
 
             {/* The message */}
             <div className="lg:col-span-6 flex flex-col items-start text-left z-10">
-              <div className="flex items-center gap-1.5 text-xs tracking-[0.28em] font-sans font-semibold mb-3">
-                <span className="text-[#3A3229]">SAME STARS.</span>
-                <span className="text-[#967C5A]">A BRIGHTER YOU.</span>
-              </div>
+              <Entrance delay={0.1}>
+                <div className="flex items-center gap-1.5 text-xs tracking-[0.28em] font-sans font-semibold mb-3">
+                  <span className="text-[#3A3229]">SAME STARS.</span>
+                  <span className="text-[#967C5A]">A BRIGHTER YOU.</span>
+                </div>
+              </Entrance>
 
               <h1 className="text-4xl sm:text-5xl md:text-6xl font-serif text-[#1F1B16] font-normal leading-[1.08] tracking-tight mb-4">
-                Understand<br />
-                your patterns<span className="font-serif italic text-[#8B6E46]">.</span>
+                <LineReveal
+                  delay={0.18}
+                  lines={[
+                    'Understand',
+                    <>
+                      your patterns
+                      <span className="font-serif italic text-[#8B6E46]">.</span>
+                    </>,
+                  ]}
+                />
               </h1>
 
               {/* What the app actually does, in two lines. */}
-              <p className="text-base sm:text-lg text-[#4C4337] font-sans max-w-lg leading-relaxed mb-2.5">
-                Tell us how you’re feeling. We read it against your real birth chart
-                and show you the pattern underneath.
-              </p>
-              <p className="text-sm text-[#8A7B68] font-serif italic mb-7">
-                Reflection, never prediction.
-              </p>
+              <Entrance delay={0.45}>
+                <p className="text-base sm:text-lg text-[#4C4337] font-sans max-w-lg leading-relaxed mb-2.5">
+                  Tell us how you’re feeling. We read it against your real birth chart
+                  and show you the pattern underneath.
+                </p>
+                <p className="text-sm text-[#8A7B68] font-serif italic mb-7">
+                  Reflection, never prediction.
+                </p>
+              </Entrance>
 
               <button
                 type="button"
@@ -325,13 +357,17 @@ export default function App() {
         </section>
 
         {/* 4. Positioning */}
-        <WhyDifferent />
+        <Reveal>
+          <WhyDifferent />
+        </Reveal>
 
         {/* 5. The classical sources, each linking to its own page */}
-        <ClassicalTextsSection />
+        <Reveal>
+          <ClassicalTextsSection />
+        </Reveal>
 
         {/* 6. Feature Section: "More than a horoscope." with 4 cards */}
-        <div className="w-full max-w-[1440px] mx-auto px-6 md:px-12 pb-6">
+        <Reveal className="w-full max-w-[1440px] mx-auto px-6 md:px-12 pb-6">
           <FeatureCardsRow
             onOpenBirthChart={() => setIsBirthChartModalOpen(true)}
             onOpenImStuck={() => setIsStuckModalOpen(true)}
@@ -340,7 +376,7 @@ export default function App() {
             onOpenPatterns={() => setIsPatternsModalOpen(true)}
             onOpenCompanions={() => setIsCompanionsModalOpen(true)}
           />
-        </div>
+        </Reveal>
         </>
         )}
       </main>
