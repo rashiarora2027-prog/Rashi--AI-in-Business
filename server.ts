@@ -70,10 +70,21 @@ CRITICAL PRINCIPLES:
 const MODEL_CHAIN = ['gemini-3.8-flash', 'gemini-3.6-flash', 'gemini-3.5-flash-lite'];
 
 /** Busy or briefly broken: the model, not the request. Worth asking again. */
-const TRANSIENT_STATUSES = new Set([429, 500, 502, 503, 504]);
+const TRANSIENT_STATUSES = new Set([500, 502, 503, 504]);
 
-/** This key cannot see this model. Pointless to retry, worth trying the next. */
-const MODEL_UNAVAILABLE_STATUSES = new Set([403, 404]);
+/**
+ * Reasons to stop asking this model and move to the next one.
+ *
+ * 403 and 404: this key cannot see the model at all.
+ *
+ * 429 belongs here rather than with the transient statuses, which is a
+ * correction. Free-tier quota is a daily allowance — the live error read
+ * "limit: 20" — so it will not come back inside one request. Retrying the same
+ * model only makes the visitor wait longer for the same fallback, whereas each
+ * model has a quota of its own, so moving on is both faster and more likely to
+ * work.
+ */
+const RULE_OUT_STATUSES = new Set([403, 404, 429]);
 
 /**
  * How long a single attempt may take before it is abandoned.
@@ -189,9 +200,10 @@ async function generateReflectiveText(prompt: string, fallback: string): Promise
         lastError = error;
         const status = statusOf(error);
 
-        if (status !== null && MODEL_UNAVAILABLE_STATUSES.has(status)) {
+        if (status !== null && RULE_OUT_STATUSES.has(status)) {
           ruledOut.add(model);
-          console.warn(`[ai] ${model} unavailable to this key (${status}); ruling it out.`);
+          const why = status === 429 ? 'quota spent' : 'not available to this key';
+          console.warn(`[ai] ${model} ${why} (${status}); ruling it out for this request.`);
           continue;
         }
 
