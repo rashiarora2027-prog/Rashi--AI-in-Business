@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import ShareCard from './ShareCard';
 import CelestialLoader from './CelestialLoader';
 import DetailedReportUpsell from './DetailedReportUpsell';
 import { StuckQuestion, StuckAnalysisResult, SavedPattern } from '../types';
@@ -280,7 +281,11 @@ export const ImStuckModal: React.FC<ImStuckModalProps> = ({
 
             {/* Action Bar */}
             <div className="flex items-center justify-between pt-4 border-t border-[#E8DDCD]">
-              <div className="flex items-center gap-3">
+              <div className="flex flex-wrap items-center gap-3">
+                <ShareCard
+                  eyebrow="The essential inquiry"
+                  quote={result.theCoreChoice}
+                />
                 <button
                   type="button"
                   onClick={handleSave}
