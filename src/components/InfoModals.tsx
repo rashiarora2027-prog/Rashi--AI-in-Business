@@ -89,56 +89,58 @@ export const InfoModals: React.FC<InfoModalProps> = ({ type, onClose, onStartNow
           )}
 
           {type === 'pricing' && (
-            <div className="space-y-6">
+            <div className="space-y-5">
               <p className="text-xs text-[#695847]">
-                Clear, honest memberships. No predatory subscription traps, no sensationalist fortune-telling.
+                One free tier and one paid reading. No subscription, no trial that
+                quietly renews, nothing withheld to make the free version feel broken.
               </p>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
-                <div className="p-4 rounded-2xl bg-white/70 border border-[#DFD1BE] flex flex-col justify-between">
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                <div className="p-5 rounded-2xl bg-white/70 border border-[#DFD1BE] flex flex-col justify-between">
                   <div>
-                    <span className="text-[10px] uppercase font-semibold text-[#8A7155]">Seeker</span>
-                    <h3 className="text-xl font-serif text-[#221C16] my-1">Free</h3>
-                    <p className="text-[11px] text-[#635342]">Daily feeling reflections, birth chart overview, and basic transit radar.</p>
+                    <span className="text-[10px] uppercase font-semibold text-[#8A7155] tracking-wider">Free</span>
+                    <h3 className="text-xl font-serif text-[#221C16] my-1">Everything you see</h3>
+                    <ul className="text-[11px] text-[#635342] space-y-1 mt-2.5">
+                      <li>· Your full birth chart, computed properly</li>
+                      <li>· “Why am I feeling this” — as often as you like</li>
+                      <li>· The stuck-decision inquiry</li>
+                      <li>· Compatibility between two charts</li>
+                      <li>· Tarot spreads</li>
+                    </ul>
                   </div>
                   <button
                     onClick={() => { onClose(); onStartNow(); }}
-                    className="mt-4 w-full py-1.5 rounded-full border border-[#C5B39E] text-xs font-medium hover:bg-[#F3EBE0]"
+                    className="mt-5 w-full py-2 rounded-full border border-[#C5B39E] text-xs font-medium hover:bg-[#F3EBE0] cursor-pointer transition-colors"
                   >
-                    Current Plan
+                    Start — no account needed
                   </button>
                 </div>
 
-                <div className="p-4 rounded-2xl bg-[#EFE4D3] border border-[#A8885B] flex flex-col justify-between shadow-xs relative">
-                  <div className="absolute -top-2.5 right-3 bg-[#1C1814] text-[#FAF7F2] text-[9px] uppercase px-2 py-0.5 rounded-full tracking-wider">
-                    Most Popular
-                  </div>
+                <div className="p-5 rounded-2xl bg-[#EFE4D3] border border-[#A8885B] flex flex-col justify-between shadow-xs">
                   <div>
-                    <span className="text-[10px] uppercase font-semibold text-[#8A7155]">In Rhythm</span>
-                    <h3 className="text-xl font-serif text-[#221C16] my-1">$12<span className="text-xs font-sans font-normal text-[#6B5A47]"> / mo</span></h3>
-                    <p className="text-[11px] text-[#554737]">Unlimited &ldquo;Why Am I Feeling This?&rdquo;, full synastry compatibility, Tarot spreads & patterns archive.</p>
+                    <span className="text-[10px] uppercase font-semibold text-[#8A7155] tracking-wider">Paid, one-off</span>
+                    <h3 className="text-xl font-serif text-[#221C16] my-1">
+                      ₹50<span className="text-xs font-sans font-normal text-[#6B5A47]"> · the detailed reading</span>
+                    </h3>
+                    <ul className="text-[11px] text-[#554737] space-y-1 mt-2.5">
+                      <li>· Lagna, Moon and Sun read one by one</li>
+                      <li>· The Vimshottari period you are running, and what it asks</li>
+                      <li>· Four areas of life, each with a practice</li>
+                      <li>· The patterns that keep returning, and the months ahead</li>
+                    </ul>
                   </div>
-                  <button
-                    onClick={() => { onClose(); onStartNow(); }}
-                    className="mt-4 w-full py-1.5 rounded-full bg-[#1C1814] text-[#FAF7F2] text-xs font-medium hover:bg-[#342D26]"
-                  >
-                    Start 14-Day Journey
-                  </button>
-                </div>
-
-                <div className="p-4 rounded-2xl bg-white/70 border border-[#DFD1BE] flex flex-col justify-between">
-                  <div>
-                    <span className="text-[10px] uppercase font-semibold text-[#8A7155]">Patron</span>
-                    <h3 className="text-xl font-serif text-[#221C16] my-1">$140<span className="text-xs font-sans font-normal text-[#6B5A47]"> / yr</span></h3>
-                    <p className="text-[11px] text-[#635342]">Annual companion dialogues, personalized Mahadasha roadmap & priority classic insights.</p>
-                  </div>
-                  <button
-                    onClick={() => { onClose(); onStartNow(); }}
-                    className="mt-4 w-full py-1.5 rounded-full border border-[#C5B39E] text-xs font-medium hover:bg-[#F3EBE0]"
-                  >
-                    Select Patron
-                  </button>
+                  <p className="mt-4 text-[10px] text-[#6B5A47] leading-relaxed">
+                    Offered at the end of any reading. Pay once, for that reading —
+                    it does not recur.
+                  </p>
                 </div>
               </div>
+
+              <p className="text-[10px] text-[#8A7863] leading-relaxed">
+                We would rather undersell this than oversell it: the free tier is the
+                whole product, and the paid reading is depth on the same chart — not a
+                better answer withheld from you.
+              </p>
             </div>
           )}
 
