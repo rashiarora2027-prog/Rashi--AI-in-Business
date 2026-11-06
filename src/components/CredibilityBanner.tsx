@@ -70,6 +70,31 @@ export const CredibilityBanner: React.FC<CredibilityBannerProps> = ({ onLearnMor
         </span>
         <BookStackIllustration />
       </div>
+
+      {/* The policies. A payment provider looks for these during activation, and
+          a visitor who wants to know what happens to their birth details should
+          not have to guess the URL. */}
+      <div className="mt-10 pt-6 border-t border-[#E8DDCD]/80 px-6 flex flex-col sm:flex-row items-center justify-between gap-3 max-w-[1440px] mx-auto">
+        <nav className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2">
+          {[
+            ['Terms', '#/terms'],
+            ['Privacy', '#/privacy'],
+            ['Refunds', '#/refunds'],
+            ['Contact', '#/contact'],
+          ].map(([label, href]) => (
+            <a
+              key={href}
+              href={href}
+              className="text-[11px] text-[#8C765C] hover:text-[#1F1B16] transition-colors"
+            >
+              {label}
+            </a>
+          ))}
+        </nav>
+        <p className="text-[10px] text-[#A1907C] text-center sm:text-right">
+          Reflection, never prediction. Not medical, legal or financial advice.
+        </p>
+      </div>
     </footer>
   );
 };
