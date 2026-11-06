@@ -54,20 +54,31 @@ CRITICAL PRINCIPLES:
 `;
 
 /**
- * The models to try, in order of preference.
+ * The models to try, in order.
  *
- * For weeks every reading in production was the hardcoded fallback, and the
- * reason was a single unretried 503: gemini-3.8-flash answered "experiencing
- * high demand", the catch below treated that as fatal, and the canned text went
- * out. Flash is the most contended tier Google sells, so an occasional "try
- * again later" is normal operation rather than an outage. The bug was never the
- * API key — it was believing the first refusal.
+ * Ordered by free-tier daily allowance, not by capability, and that is
+ * deliberate. On the free tier the flagship Flash models allow roughly 20
+ * requests a day; the Flash-Lite models allow roughly 500. Leading with the
+ * most capable model therefore meant the whole app stopped working after
+ * about twenty readings, every day, while 1000 perfectly good requests sat
+ * unused behind it.
  *
- * Order matters. Most capable first, then its older stable siblings, which are
- * less congested precisely because fewer callers reach for them. A reading from
- * 3.5-flash-lite is enormously better than no reading at all.
+ * The live logs showed exactly that: 3.8-flash answered 429 "quota spent"
+ * while 3.5-flash-lite answered only 503 "busy" — it still had allowance. The
+ * capacity was always there; the order was wrong.
+ *
+ * Flash-Lite writes less elaborately than Flash. That is a real cost, and it
+ * is worth paying: a genuine reading of someone's own chart from a smaller
+ * model is incomparably better than the identical canned paragraph every
+ * visitor was getting. The flagships stay at the back, so on a quiet day the
+ * better writer is still reachable once the Lite allowances run out.
  */
-const MODEL_CHAIN = ['gemini-3.8-flash', 'gemini-3.6-flash', 'gemini-3.5-flash-lite'];
+const MODEL_CHAIN = [
+  'gemini-3.5-flash-lite',
+  'gemini-3.1-flash-lite',
+  'gemini-3.8-flash',
+  'gemini-3.6-flash',
+];
 
 /** Busy or briefly broken: the model, not the request. Worth asking again. */
 const TRANSIENT_STATUSES = new Set([500, 502, 503, 504]);
