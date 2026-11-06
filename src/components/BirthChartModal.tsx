@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import KundaliChart from './KundaliChart';
 import DetailedReportUpsell from './DetailedReportUpsell';
 import { UserProfile } from '../types';
 import { calculateFullKundali, KundaliChartData } from '../utils/astronomy';
@@ -104,6 +105,21 @@ export const BirthChartModal: React.FC<BirthChartModalProps> = ({
         {/* Tab 1: Primary Pillars Overview */}
         {activeTab === 'overview' && (
           <div className="space-y-6 animate-fade-in text-left">
+            {/* The chart itself. It leads the tab because it is the thing people
+                came to see; the cards below read as annotations on it rather
+                than as a list that happens to mention a chart. */}
+            {chartData && asc && (
+              <div className="flex justify-center pt-1 pb-2">
+                <KundaliChart
+                  ascendant={asc}
+                  planets={chartData.planets}
+                  sun={sun}
+                  moon={moon}
+                  size={330}
+                />
+              </div>
+            )}
+
             {/* Natal Highlights Grid */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
               {/* Lagna / Ascendant */}
