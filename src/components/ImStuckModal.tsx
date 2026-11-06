@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import CelestialLoader from './CelestialLoader';
 import DetailedReportUpsell from './DetailedReportUpsell';
 import { StuckQuestion, StuckAnalysisResult, SavedPattern } from '../types';
 
@@ -208,17 +209,14 @@ export const ImStuckModal: React.FC<ImStuckModalProps> = ({
 
         {/* Analyzing Screen */}
         {isAnalyzing && (
-          <div className="py-16 text-center space-y-4">
-            <div className="w-12 h-12 rounded-full border-2 border-[#D8C6B1] border-t-[#8B6E46] animate-spin mx-auto flex items-center justify-center">
-              <span className="text-xs text-[#8B6E46] font-serif">☾</span>
-            </div>
-            <h3 className="font-serif text-xl text-[#241E18]">
-              Synthesizing your patterns...
-            </h3>
-            <p className="text-xs text-[#7A6956] max-w-sm mx-auto leading-relaxed">
-              Unpacking the underlying psychological knot and mapping it against Saturnian and Jupiterian thresholds.
-            </p>
-          </div>
+          <CelestialLoader
+            phases={[
+              'Reading back what you answered…',
+              'Looking for the loop underneath the decision…',
+              'Placing it in your running planetary period…',
+              'Naming the choice as plainly as we can…',
+            ]}
+          />
         )}
 
         {/* Results Screen */}
