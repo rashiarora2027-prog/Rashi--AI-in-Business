@@ -76,17 +76,28 @@ const TRANSIENT_STATUSES = new Set([429, 500, 502, 503, 504]);
 const MODEL_UNAVAILABLE_STATUSES = new Set([403, 404]);
 
 /**
+ * How long a single attempt may take before it is abandoned.
+ *
+ * This number is the whole reason the first version of this fix did not work.
+ * A "high demand" refusal is not fast — the one measured in production took
+ * about fifteen seconds to arrive — so an overall budget with no per-attempt
+ * cap was spent entirely by attempt one, and the fallback models below were
+ * never reached even once. Capping each attempt is what makes a chain a chain.
+ */
+const ATTEMPT_TIMEOUT_MS = 11_000;
+
+/**
  * How long all attempts together may take.
  *
- * Someone is watching a loader while this runs, so the ceiling is set by their
- * patience rather than by the platform's 300s function limit. Past roughly
- * twenty seconds they assume it has hung, and a fallback now beats a perfect
- * reading they never waited for.
+ * Wide enough to reach all three models once, which is the point. The ceiling
+ * is set by how long someone will watch a loader before assuming the page has
+ * hung, traded off against the fact that the alternative is identical canned
+ * text for every visitor.
  */
-const AI_BUDGET_MS = 20_000;
+const AI_BUDGET_MS = 36_000;
 
-/** Attempts per model before moving down the chain. */
-const ATTEMPTS_PER_MODEL = 2;
+/** Passes through the chain. A second pass only happens if the first was quick. */
+const ROUNDS = 2;
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -113,7 +124,7 @@ function describeError(error: unknown): string {
 }
 
 /**
- * Ask a model for text, working down the chain until one answers.
+ * Ask a model for text, working through the chain until one answers.
  *
  * Returns `fallback` only once every option is genuinely exhausted — which is
  * what it was always meant to mean.
@@ -125,15 +136,28 @@ async function generateReflectiveText(prompt: string, fallback: string): Promise
 
   const deadline = Date.now() + AI_BUDGET_MS;
   let lastError: unknown = null;
+  // Models this key cannot use at all. No point offering them a second round.
+  const ruledOut = new Set<string>();
 
-  for (const model of MODEL_CHAIN) {
-    for (let attempt = 1; attempt <= ATTEMPTS_PER_MODEL; attempt++) {
-      if (Date.now() >= deadline) {
+  for (let round = 1; round <= ROUNDS; round++) {
+    for (const model of MODEL_CHAIN) {
+      if (ruledOut.has(model)) continue;
+
+      const remaining = deadline - Date.now();
+      // Under two seconds left is not enough for anything to come back; spending
+      // it means the visitor waits longer for the same fallback.
+      if (remaining < 2_000) {
         console.error(
-          `[ai] Budget of ${AI_BUDGET_MS}ms spent; serving fallback. Last error: ${describeError(lastError)}`
+          `[ai] Budget of ${AI_BUDGET_MS}ms spent after round ${round}; serving fallback. ` +
+            `Last error: ${describeError(lastError)}`
         );
         return fallback;
       }
+
+      // Abandon an attempt that is merely slow, so one congested model cannot
+      // consume the time the others needed.
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), Math.min(ATTEMPT_TIMEOUT_MS, remaining));
 
       try {
         const response = await aiClient.models.generateContent({
@@ -142,31 +166,33 @@ async function generateReflectiveText(prompt: string, fallback: string): Promise
           config: {
             systemInstruction: ASTROLOGY_SYSTEM_INSTRUCTION,
             temperature: 0.7,
+            abortSignal: controller.signal,
           },
         });
 
         const text = response.text;
         if (text && text.trim()) {
-          // Worth a line when the first choice did not answer: it is the only
-          // way to notice the primary model degrading before users complain.
-          if (model !== MODEL_CHAIN[0] || attempt > 1) {
-            console.warn(`[ai] Recovered on ${model} at attempt ${attempt}.`);
+          // Worth a line whenever the first choice did not answer: it is the
+          // only way to notice the primary model degrading before users do.
+          if (model !== MODEL_CHAIN[0] || round > 1) {
+            console.warn(`[ai] Recovered on ${model} in round ${round}.`);
           }
           return text;
         }
 
-        // A 200 carrying no text is usually a safety block on this prompt.
-        // Retrying the same model changes nothing, so drop down the chain.
+        // A 200 carrying no text is usually a safety block on this prompt, and
+        // the next model is likely to block it too — but it costs one attempt
+        // to find out, and the chain is already walking that way.
         lastError = new Error(`${model} returned an empty response`);
-        console.warn(`[ai] ${model} returned no text; trying the next model.`);
-        break;
+        console.warn(`[ai] ${model} returned no text; moving on.`);
       } catch (error) {
         lastError = error;
         const status = statusOf(error);
 
         if (status !== null && MODEL_UNAVAILABLE_STATUSES.has(status)) {
-          console.warn(`[ai] ${model} unavailable to this key (${status}); trying the next model.`);
-          break;
+          ruledOut.add(model);
+          console.warn(`[ai] ${model} unavailable to this key (${status}); ruling it out.`);
+          continue;
         }
 
         if (status !== null && !TRANSIENT_STATUSES.has(status)) {
@@ -176,16 +202,22 @@ async function generateReflectiveText(prompt: string, fallback: string): Promise
           return fallback;
         }
 
-        console.warn(
-          `[ai] ${model} busy (${status ?? 'no status'}) on attempt ${attempt}: ${describeError(error)}`
-        );
-
-        if (attempt < ATTEMPTS_PER_MODEL) {
-          // A spike is often over within a second; back off a little, and
-          // jitter so simultaneous visitors do not retry in lockstep.
-          await sleep(600 + Math.floor(Math.random() * 400));
+        if (controller.signal.aborted) {
+          console.warn(`[ai] ${model} did not answer within ${ATTEMPT_TIMEOUT_MS}ms; moving on.`);
+        } else {
+          console.warn(
+            `[ai] ${model} busy (${status ?? 'no status'}) in round ${round}: ${describeError(error)}`
+          );
         }
+      } finally {
+        clearTimeout(timer);
       }
+    }
+
+    if (round < ROUNDS) {
+      // Jittered, so simultaneous visitors do not all come back in lockstep
+      // and make the congestion they are waiting out.
+      await sleep(300 + Math.floor(Math.random() * 400));
     }
   }
 
