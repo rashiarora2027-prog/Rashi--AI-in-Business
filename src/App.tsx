@@ -7,7 +7,7 @@ import { FeatureCardsRow } from './components/FeatureCardsRow';
 import WhyDifferent from './components/WhyDifferent';
 import ClassicalTextsSection from './components/ClassicalTextsSection';
 import CelestialBackdrop from './components/CelestialBackdrop';
-import StarField from './components/StarField';
+import NightSky from './components/NightSky';
 import LegalPages, { type LegalRoute } from './components/LegalPages';
 import { Entrance, LineReveal, Reveal } from './motion/primitives';
 import { DashaArcs, LunarColumn } from './components/AbstractMotifs';
@@ -206,7 +206,10 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-[#F6F2EB] text-[#24201B] flex flex-col justify-between selection:bg-[#E2D5C3] selection:text-[#1F1C18] relative overflow-x-hidden">
+    <div className="min-h-screen bg-[#0A0F1C] text-[#E9E2D4] flex flex-col justify-between selection:bg-[#2B3A5C] selection:text-[#F5EFE3] relative overflow-x-hidden">
+      {/* The sky sits behind the whole page, fixed, so scrolling moves the
+          content against it rather than dragging it along. */}
+      <NightSky />
       
       {/* Top Background Delicate Celestial Elements */}
       {/* Subtle Ambient Sunburst Watermark */}
@@ -235,14 +238,16 @@ export default function App() {
       <div className="absolute top-16 left-1/3 text-[#9A8164] opacity-20 pointer-events-none select-none text-[9px]">✦</div>
 
       {/* 1. Header Navigation */}
+      <div className="theme-night relative z-20">
       <TopNav
         activeTab={activeTab}
         onSelectTab={handleSelectTab}
         onStartNow={handleStartNow}
       />
+      </div>
 
       {/* Main Content Area */}
-      <main className="w-full flex-1">
+      <main className="theme-night w-full flex-1 relative z-10">
         {legalRoute ? (
           <LegalPages route={legalRoute} onHome={goHome} />
         ) : isTextsRoute ? (
@@ -255,15 +260,14 @@ export default function App() {
             was splitting attention on first load. */}
         <section className="relative w-full min-h-[calc(100vh-96px)] flex items-center py-10 overflow-hidden">
           <CelestialBackdrop />
-          <StarField />
           <div className="relative w-full max-w-[1440px] mx-auto px-6 md:px-12 grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-8 items-center">
 
             {/* The message */}
             <div className="lg:col-span-6 flex flex-col items-start text-left z-10">
               <Entrance delay={0.1}>
                 <div className="flex items-center gap-1.5 text-xs tracking-[0.28em] font-sans font-semibold mb-3">
-                  <span className="text-[#3A3229]">SAME STARS.</span>
-                  <span className="text-[#967C5A]">A BRIGHTER YOU.</span>
+                  <span className="text-[#E9E2D4]">REFLECTION,</span>
+                  <span className="text-[#E3C98B]">NOT PREDICTION.</span>
                 </div>
               </Entrance>
 
@@ -286,9 +290,7 @@ export default function App() {
                   Tell us how you’re feeling. We read it against your real birth chart
                   and show you the pattern underneath.
                 </p>
-                <p className="text-sm text-[#8A7B68] font-serif italic mb-7">
-                  Reflection, never prediction.
-                </p>
+                <div className="mb-7" />
               </Entrance>
 
               <button
@@ -382,7 +384,9 @@ export default function App() {
       </main>
 
       {/* 4. Bottom Credibility Banner & Classical Texts Illustration */}
-      <CredibilityBanner onLearnMore={() => setInfoModalType('about')} />
+      <div className="theme-night relative z-10">
+        <CredibilityBanner onLearnMore={() => setInfoModalType('about')} />
+      </div>
 
       {/* ================= Interactive Modals ================= */}
 
