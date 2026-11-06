@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import CelestialLoader from './CelestialLoader';
 import { UserProfile, FeelingInsightResult, SavedPattern, QuickFeeling } from '../types';
 import DetailedReportUpsell from './DetailedReportUpsell';
 
@@ -192,17 +193,14 @@ export const WhyAmIFeelingThisModal: React.FC<WhyAmIFeelingThisModalProps> = ({
 
         {/* Loading State Animation */}
         {loading && (
-          <div className="py-12 flex flex-col items-center justify-center text-center space-y-3">
-            <div className="w-12 h-12 rounded-full border-2 border-[#D8C6B1] border-t-[#8B6E46] animate-spin flex items-center justify-center">
-              <span className="text-xs text-[#8B6E46] font-serif">☉</span>
-            </div>
-            <p className="font-serif italic text-sm text-[#4E4132]">
-              Mapping your subjective experience against classical planetary transits...
-            </p>
-            <p className="text-[11px] text-[#8B7863]">
-              Referencing principles from Brihat Parashara Hora Shastra &amp; Saravali
-            </p>
-          </div>
+          <CelestialLoader
+            phases={[
+              'Calculating your sidereal placements…',
+              'Locating the Moon’s nakshatra and pada…',
+              'Reading your running Vimshottari period…',
+              'Mapping what you described against the chart…',
+            ]}
+          />
         )}
 
         {/* Results Presentation */}
