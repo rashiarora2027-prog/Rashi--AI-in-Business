@@ -53,25 +53,144 @@ CRITICAL PRINCIPLES:
 5. Provide actionable self-inquiries, gentle reframings, and reflective themes.
 `;
 
-// Helper: Call Gemini or return fallback
+/**
+ * The models to try, in order of preference.
+ *
+ * For weeks every reading in production was the hardcoded fallback, and the
+ * reason was a single unretried 503: gemini-3.8-flash answered "experiencing
+ * high demand", the catch below treated that as fatal, and the canned text went
+ * out. Flash is the most contended tier Google sells, so an occasional "try
+ * again later" is normal operation rather than an outage. The bug was never the
+ * API key — it was believing the first refusal.
+ *
+ * Order matters. Most capable first, then its older stable siblings, which are
+ * less congested precisely because fewer callers reach for them. A reading from
+ * 3.5-flash-lite is enormously better than no reading at all.
+ */
+const MODEL_CHAIN = ['gemini-3.8-flash', 'gemini-3.6-flash', 'gemini-3.5-flash-lite'];
+
+/** Busy or briefly broken: the model, not the request. Worth asking again. */
+const TRANSIENT_STATUSES = new Set([429, 500, 502, 503, 504]);
+
+/** This key cannot see this model. Pointless to retry, worth trying the next. */
+const MODEL_UNAVAILABLE_STATUSES = new Set([403, 404]);
+
+/**
+ * How long all attempts together may take.
+ *
+ * Someone is watching a loader while this runs, so the ceiling is set by their
+ * patience rather than by the platform's 300s function limit. Past roughly
+ * twenty seconds they assume it has hung, and a fallback now beats a perfect
+ * reading they never waited for.
+ */
+const AI_BUDGET_MS = 20_000;
+
+/** Attempts per model before moving down the chain. */
+const ATTEMPTS_PER_MODEL = 2;
+
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+/** The HTTP status off a GoogleGenAI ApiError, which carries it as `status`. */
+function statusOf(error: unknown): number | null {
+  const status = (error as { status?: unknown } | null)?.status;
+  return typeof status === 'number' ? status : null;
+}
+
+/**
+ * A short, safe description for the log.
+ *
+ * Truncated so a stack trace cannot bury the message, and scrubbed of anything
+ * key-shaped: these lines are readable by anyone with project access, and an
+ * API key must never reach them even in the text of an error.
+ */
+function describeError(error: unknown): string {
+  if (!error) return 'none';
+  const message = error instanceof Error ? error.message : String(error);
+  return message
+    .replace(/(key|token|apikey|api_key)=[^&\s"']+/gi, '$1=REDACTED')
+    .replace(/AIza[0-9A-Za-z_-]{10,}/g, 'REDACTED')
+    .slice(0, 400);
+}
+
+/**
+ * Ask a model for text, working down the chain until one answers.
+ *
+ * Returns `fallback` only once every option is genuinely exhausted — which is
+ * what it was always meant to mean.
+ */
 async function generateReflectiveText(prompt: string, fallback: string): Promise<string> {
   if (!aiClient || !process.env.GEMINI_API_KEY) {
     return fallback;
   }
-  try {
-    const response = await aiClient.models.generateContent({
-      model: 'gemini-3.8-flash',
-      contents: prompt,
-      config: {
-        systemInstruction: ASTROLOGY_SYSTEM_INSTRUCTION,
-        temperature: 0.7,
-      },
-    });
-    return response.text || fallback;
-  } catch (error) {
-    console.warn('Gemini API call failed, using graceful fallback:', error);
-    return fallback;
+
+  const deadline = Date.now() + AI_BUDGET_MS;
+  let lastError: unknown = null;
+
+  for (const model of MODEL_CHAIN) {
+    for (let attempt = 1; attempt <= ATTEMPTS_PER_MODEL; attempt++) {
+      if (Date.now() >= deadline) {
+        console.error(
+          `[ai] Budget of ${AI_BUDGET_MS}ms spent; serving fallback. Last error: ${describeError(lastError)}`
+        );
+        return fallback;
+      }
+
+      try {
+        const response = await aiClient.models.generateContent({
+          model,
+          contents: prompt,
+          config: {
+            systemInstruction: ASTROLOGY_SYSTEM_INSTRUCTION,
+            temperature: 0.7,
+          },
+        });
+
+        const text = response.text;
+        if (text && text.trim()) {
+          // Worth a line when the first choice did not answer: it is the only
+          // way to notice the primary model degrading before users complain.
+          if (model !== MODEL_CHAIN[0] || attempt > 1) {
+            console.warn(`[ai] Recovered on ${model} at attempt ${attempt}.`);
+          }
+          return text;
+        }
+
+        // A 200 carrying no text is usually a safety block on this prompt.
+        // Retrying the same model changes nothing, so drop down the chain.
+        lastError = new Error(`${model} returned an empty response`);
+        console.warn(`[ai] ${model} returned no text; trying the next model.`);
+        break;
+      } catch (error) {
+        lastError = error;
+        const status = statusOf(error);
+
+        if (status !== null && MODEL_UNAVAILABLE_STATUSES.has(status)) {
+          console.warn(`[ai] ${model} unavailable to this key (${status}); trying the next model.`);
+          break;
+        }
+
+        if (status !== null && !TRANSIENT_STATUSES.has(status)) {
+          // A malformed request or a rejected key fails identically on every
+          // model, so stop rather than walking the whole chain to prove it.
+          console.error(`[ai] ${model} failed permanently (${status}): ${describeError(error)}`);
+          return fallback;
+        }
+
+        console.warn(
+          `[ai] ${model} busy (${status ?? 'no status'}) on attempt ${attempt}: ${describeError(error)}`
+        );
+
+        if (attempt < ATTEMPTS_PER_MODEL) {
+          // A spike is often over within a second; back off a little, and
+          // jitter so simultaneous visitors do not retry in lockstep.
+          await sleep(600 + Math.floor(Math.random() * 400));
+        }
+      }
+    }
   }
+
+  console.error(`[ai] Every model was unavailable. Last error: ${describeError(lastError)}`);
+  return fallback;
 }
 
 import { registerPaymentRoutes } from './payments.ts';
