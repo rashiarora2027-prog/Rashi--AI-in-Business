@@ -6,7 +6,9 @@
     --font-sans: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
     --font-script: 'Caveat', cursive;
     
-    --bg-primary: #F6F2EB;
+    /* The page is a night sky now. Kept as a token so the one place that
+       decides the page's ground colour is still one place. */
+    --bg-primary: #0A0F1C;
     --bg-card: rgba(255, 255, 255, 0.65);
     --border-subtle: rgba(184, 166, 148, 0.28);
     --gold-primary: #B89053;
@@ -57,16 +59,16 @@
 }
 
 ::-webkit-scrollbar-track {
-  background: #EFE9E0;
+  background: #0E1422;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #CFC2B2;
+  background: #2B3450;
   border-radius: 9999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #B3A08C;
+  background: #3C4765;
 }
 
 @keyframes spin-slow {
@@ -146,4 +148,233 @@
   .wheel-corona {
     animation: none;
   }
+}
+
+/* ---------------------------------------------------------------------------
+   Night theme.
+
+   The page became a sky, so the page palette had to invert. Rather than edit
+   the same two dozen colours across a dozen components by hand, the mapping is
+   declared once here and scoped to .theme-night.
+
+   These are ATTRIBUTE selectors, matching on a substring of the class
+   attribute, rather than escaped class selectors. That is deliberate and it
+   fixes a real bug: Tailwind compiles an opacity modifier into its own class
+   name, so `.bg-\[\#FAF7F2\]` does not match `bg-[#FAF7F2]/90`. Enumerating
+   every opacity variant would mean re-finding them all each time one is added.
+   Matching the substring covers the base class and every modifier of it.
+
+   Scope matters: .theme-night goes on the page shell, NOT the root. The modals
+   render outside it and stay cream on purpose, so they read as lit paper held
+   against the night rather than more darkness.
+
+   Only light panels and dark text are remapped. Dark buttons and their light
+   text are left alone — near-black with cream type still reads well on a night
+   ground, and flipping both would invert them twice and lose the CTA.
+   --------------------------------------------------------------------------- */
+.theme-night { color: #E9E2D4; }
+
+/* The page ground itself gets out of the way so the sky shows through. */
+.theme-night [class*="bg-[#F6F2EB]"] { background-color: transparent !important; }
+
+
+.theme-night [class*="bg-[#E2D5C3]"],
+.theme-night [class*="bg-[#EAE2D3]"],
+.theme-night [class*="bg-[#EBDDC8]"],
+.theme-night [class*="bg-[#EBDDC9]"] {
+  background-color: rgba(255,250,240,0.06) !important;
+}
+
+.theme-night [class*="bg-[#EFE5D5]"],
+.theme-night [class*="bg-[#EFE6D8]"],
+.theme-night [class*="bg-[#EFE9DF]"],
+.theme-night [class*="bg-[#F2E8D9]"] {
+  background-color: rgba(255,250,240,0.06) !important;
+}
+
+.theme-night [class*="bg-[#F2ECE0]"],
+.theme-night [class*="bg-[#F2ECE1]"],
+.theme-night [class*="bg-[#F2EDE4]"],
+.theme-night [class*="bg-[#FAF6F0]"] {
+  background-color: rgba(255,250,240,0.06) !important;
+}
+
+.theme-night [class*="bg-[#FAF7F2]"],
+.theme-night [class*="bg-[#FBF8F3]"] {
+  background-color: rgba(255,250,240,0.06) !important;
+}
+
+.theme-night [class*="bg-[#BFA88F]"] {
+  background-color: rgba(255,250,240,0.10) !important;
+}
+
+.theme-night [class*="bg-white"] {
+  background-color: rgba(255,250,240,0.07) !important;
+}
+
+.theme-night [class*="text-[#1E1A16]"],
+.theme-night [class*="text-[#1F1B16]"],
+.theme-night [class*="text-[#1F1C18]"],
+.theme-night [class*="text-[#201A15]"] {
+  color: #EFE8DA !important;
+}
+
+.theme-night [class*="text-[#221D17]"],
+.theme-night [class*="text-[#221D18]"],
+.theme-night [class*="text-[#241F1A]"],
+.theme-night [class*="text-[#24201B]"] {
+  color: #EFE8DA !important;
+}
+
+.theme-night [class*="text-[#251E17]"],
+.theme-night [class*="text-[#29221B]"],
+.theme-night [class*="text-[#2B231B]"],
+.theme-night [class*="text-[#2E2822]"] {
+  color: #EFE8DA !important;
+}
+
+.theme-night [class*="text-[#332A20]"],
+.theme-night [class*="text-[#382E23]"],
+.theme-night [class*="text-[#3A3127]"],
+.theme-night [class*="text-[#3A3229]"] {
+  color: #EFE8DA !important;
+}
+
+.theme-night [class*="text-[#3A332B]"],
+.theme-night [class*="text-[#3E372E]"],
+.theme-night [class*="text-[#44382B]"],
+.theme-night [class*="text-[#453B2F]"] {
+  color: #EFE8DA !important;
+}
+
+.theme-night [class*="text-[#473E34]"],
+.theme-night [class*="text-[#4C4337]"],
+.theme-night [class*="text-[#4F4335]"],
+.theme-night [class*="text-[#4F4336]"] {
+  color: #EFE8DA !important;
+}
+
+.theme-night [class*="text-[#4F4437]"],
+.theme-night [class*="text-[#4F463B]"],
+.theme-night [class*="text-[#554737]"],
+.theme-night [class*="text-[#5C5042]"] {
+  color: #EFE8DA !important;
+}
+
+.theme-night [class*="text-[#5E5140]"],
+.theme-night [class*="text-[#635545]"],
+.theme-night [class*="text-[#635748]"] {
+  color: #EFE8DA !important;
+}
+
+.theme-night [class*="text-[#695844]"],
+.theme-night [class*="text-[#705E4A]"],
+.theme-night [class*="text-[#786754]"],
+.theme-night [class*="text-[#7A664E]"] {
+  color: #C7B498 !important;
+}
+
+.theme-night [class*="text-[#7A6956]"],
+.theme-night [class*="text-[#7A6A58]"],
+.theme-night [class*="text-[#7E6135]"],
+.theme-night [class*="text-[#7F6643]"] {
+  color: #C7B498 !important;
+}
+
+.theme-night [class*="text-[#846F54]"],
+.theme-night [class*="text-[#856C47]"],
+.theme-night [class*="text-[#866D4E]"],
+.theme-night [class*="text-[#866D52]"] {
+  color: #C7B498 !important;
+}
+
+.theme-night [class*="text-[#867158]"],
+.theme-night [class*="text-[#86735E]"],
+.theme-night [class*="text-[#887053]"],
+.theme-night [class*="text-[#887259]"] {
+  color: #C7B498 !important;
+}
+
+.theme-night [class*="text-[#8A7153]"],
+.theme-night [class*="text-[#8A7155]"],
+.theme-night [class*="text-[#8A7256]"],
+.theme-night [class*="text-[#8A7B68]"] {
+  color: #C7B498 !important;
+}
+
+.theme-night [class*="text-[#8B6E46]"],
+.theme-night [class*="text-[#8C765C]"],
+.theme-night [class*="text-[#8E7C67]"],
+.theme-night [class*="text-[#8F7D6B]"] {
+  color: #C7B498 !important;
+}
+
+.theme-night [class*="text-[#937C63]"],
+.theme-night [class*="text-[#967C5A]"],
+.theme-night [class*="text-[#9A8164]"],
+.theme-night [class*="text-[#9A8A78]"] {
+  color: #C7B498 !important;
+}
+
+.theme-night [class*="text-[#9E8363]"],
+.theme-night [class*="text-[#A1907C]"],
+.theme-night [class*="text-[#A6937C]"],
+.theme-night [class*="text-[#B3A08A]"] {
+  color: #C7B498 !important;
+}
+
+.theme-night [class*="text-[#C2B29F]"],
+.theme-night [class*="text-[#C4B3A0]"] {
+  color: #C7B498 !important;
+}
+
+.theme-night [class*="border-[#A88755]"],
+.theme-night [class*="border-[#A8885B]"],
+.theme-night [class*="border-[#BFA27E]"],
+.theme-night [class*="border-[#BFA482]"] {
+  border-color: rgba(255,246,230,0.14) !important;
+}
+
+.theme-night [class*="border-[#BFA88F]"],
+.theme-night [class*="border-[#C4AE91]"],
+.theme-night [class*="border-[#C4AE92]"],
+.theme-night [class*="border-[#D0C0AC]"] {
+  border-color: rgba(255,246,230,0.14) !important;
+}
+
+.theme-night [class*="border-[#D5C2AA]"],
+.theme-night [class*="border-[#D5C5B2]"],
+.theme-night [class*="border-[#D8C7B2]"],
+.theme-night [class*="border-[#DACBB8]"] {
+  border-color: rgba(255,246,230,0.14) !important;
+}
+
+.theme-night [class*="border-[#DECDBB]"],
+.theme-night [class*="border-[#DECFBD]"],
+.theme-night [class*="border-[#DECFBE]"],
+.theme-night [class*="border-[#DFD1BE]"] {
+  border-color: rgba(255,246,230,0.14) !important;
+}
+
+.theme-night [class*="border-[#E0D3C2]"],
+.theme-night [class*="border-[#E3D4C2]"],
+.theme-night [class*="border-[#E3D7C7]"],
+.theme-night [class*="border-[#E4D7C8]"] {
+  border-color: rgba(255,246,230,0.14) !important;
+}
+
+.theme-night [class*="border-[#E7DCCB]"],
+.theme-night [class*="border-[#E7DDCE]"],
+.theme-night [class*="border-[#E8DDCD]"],
+.theme-night [class*="border-[#E8DDCE]"] {
+  border-color: rgba(255,246,230,0.14) !important;
+}
+
+.theme-night [class*="border-[#EADBCA]"] {
+  border-color: rgba(255,246,230,0.14) !important;
+}
+
+.theme-night [class*="decoration-[#CBBBA8]"],
+.theme-night [class*="decoration-[#DECDBB]"] {
+  text-decoration-color: rgba(255,246,230,0.35) !important;
 }
