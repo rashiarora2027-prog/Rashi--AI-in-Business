@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import ShareCard from './ShareCard';
 import CelestialLoader from './CelestialLoader';
 import { UserProfile, FeelingInsightResult, SavedPattern, QuickFeeling } from '../types';
 import DetailedReportUpsell from './DetailedReportUpsell';
@@ -321,6 +322,13 @@ export const WhyAmIFeelingThisModal: React.FC<WhyAmIFeelingThisModalProps> = ({
 
             {/* Action Bar: Save Pattern & Close */}
             <div className="flex items-center justify-between pt-4 border-t border-[#E8DDCD]">
+              <ShareCard
+                eyebrow="Why am I feeling this"
+                quote={result.summary}
+                meta={`${userProfile.name} · ${userProfile.ascendant || ''} rising · ${userProfile.nakshatra || ''} moon`.replace(/\s+·\s+·/g, ' ·')}
+                className="mr-2"
+              />
+
               <button
                 type="button"
                 onClick={handleSave}

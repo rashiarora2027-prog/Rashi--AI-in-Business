@@ -39,7 +39,7 @@ const STUCK_QUESTIONS: StuckQuestion[] = [
   {
     id: 6,
     question: 'If you listen to your body rather than your logical arguments, does your chest expand or contract when picturing the new path?',
-    insight: 'Accessing somatic somatic intelligence beyond mental debate.'
+    insight: 'Accessing somatic intelligence beyond mental debate.'
   }
 ];
 
