@@ -31,8 +31,68 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400..700&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400;1,600&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <!--
+      Blank-page recovery.
+
+      Vite fingerprints every bundle, so index.html is the file that names which
+      fingerprints are current. A visitor holding a cached index.html from an
+      earlier deploy asks for a bundle hash that no longer exists, gets a 404,
+      and sees a blank page: no error on screen, nothing in the server logs, no
+      way for them to know that a reload would fix it. They just leave.
+
+      Serving that 404 honestly (rather than silently returning index.html) was
+      the first half of the fix. This is the second half: notice the failure and
+      recover from it once, without the visitor having to know anything.
+
+      Guarded by sessionStorage so a genuinely broken deploy cannot put a
+      visitor in a reload loop — it reloads at most once per session, and the
+      guard is cleared again as soon as the app is seen to mount.
+    -->
+    <script>
+      (function () {
+        var KEY = 'patterns_boot_recovery';
+
+        function recover(why) {
+          try {
+            if (sessionStorage.getItem(KEY)) return; // already tried; do not loop
+            sessionStorage.setItem(KEY, '1');
+          } catch (e) {
+            return; // no storage means no loop guard, so do not risk reloading
+          }
+          console.warn('[boot] ' + why + '; reloading to pick up the current build.');
+          location.reload();
+        }
+
+        // Resource errors do not bubble, so this listener has to capture.
+        window.addEventListener(
+          'error',
+          function (event) {
+            var el = event.target;
+            if (el && el !== window && (el.tagName === 'SCRIPT' || el.tagName === 'LINK')) {
+              recover('an asset failed to load');
+            }
+          },
+          true
+        );
+
+        // Belt and braces: if nothing rendered, the bundle never ran. Generous
+        // enough not to punish a slow connection, since the listener above
+        // already catches the common case immediately.
+        window.addEventListener('load', function () {
+          setTimeout(function () {
+            var root = document.getElementById('root');
+            if (root && root.children.length > 0) {
+              try { sessionStorage.removeItem(KEY); } catch (e) {}
+            } else {
+              recover('the app did not mount');
+            }
+          }, 8000);
+        });
+      })();
+    </script>
   </head>
-  <body class="bg-[#F6F2EB] text-[#24211E] antialiased selection:bg-[#E2D5C3] selection:text-[#1F1C18]">
+  <body class="bg-[#0A0F1C] text-[#E9E2D4] antialiased selection:bg-[#E2D5C3] selection:text-[#1F1C18]">
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
